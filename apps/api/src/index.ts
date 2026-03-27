@@ -19,9 +19,10 @@ app.route('/api/sse', sseRoutes)
 
 app.get('/api/health', (c) => c.json({ ok: true }))
 
-export default app
-
 const port = Number(process.env.PORT ?? 3001)
 console.log(`API listening on http://localhost:${port}`)
 
-Bun.serve({ fetch: app.fetch, port })
+export default {
+  fetch: app.fetch,
+  port,
+}
