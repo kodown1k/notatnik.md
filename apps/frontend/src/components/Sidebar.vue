@@ -49,11 +49,15 @@ function openFile(filename: string) {
   width: var(--sidebar-w);
   background: var(--bg-sidebar);
   border-right: 1px solid var(--border);
-  height: calc(100vh - var(--navbar-h));
-  position: sticky;
-  top: var(--navbar-h);
   overflow-y: auto;
+  overflow-x: hidden;
   flex-shrink: 0;
+  transition: width 0.2s ease;
+}
+
+.sidebar.sidebar-collapsed {
+  width: 0;
+  border-right: none;
 }
 
 .file-list { list-style: none; padding: 8px 0; }

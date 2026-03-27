@@ -4,6 +4,13 @@
     <!-- Navbar -->
     <header class="navbar">
       <div class="navbar-left">
+        <button v-if="vaultStore.vaultPath" class="sidebar-toggle" @click="toggleSidebar" :title="sidebarOpen ? 'Ukryj panel' : 'Pokaż panel'">
+          <svg viewBox="0 0 18 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <line x1="0" y1="2" x2="18" y2="2"/>
+            <line x1="0" y1="7" x2="18" y2="7"/>
+            <line x1="0" y1="12" x2="18" y2="12"/>
+          </svg>
+        </button>
         <span class="logo" @click="router.push('/')">notatnik.md</span>
       </div>
       <div class="navbar-center">
@@ -28,7 +35,7 @@
 
     <!-- Body: sidebar + content -->
     <div class="app-body">
-      <Sidebar v-if="vaultStore.vaultPath" />
+      <Sidebar v-if="vaultStore.vaultPath" :class="{ 'sidebar-collapsed': !sidebarOpen }" />
       <main class="main-content">
         <router-view />
       </main>
@@ -48,6 +55,12 @@ const router = useRouter()
 const vaultStore = useVaultStore()
 const sseStore = useSseStore()
 const pathInput = ref('')
+const sidebarOpen = ref(localStorage.getItem('notatnik-sidebar') !== 'closed')
+
+function toggleSidebar() {
+  sidebarOpen.value = !sidebarOpen.value
+  localStorage.setItem('notatnik-sidebar', sidebarOpen.value ? 'open' : 'closed')
+}
 
 onMounted(async () => {
   await vaultStore.loadVault()
@@ -92,7 +105,22 @@ async function changeVault() {
   gap: 16px;
 }
 
-.navbar-left { flex-shrink: 0; }
+.navbar-left { flex-shrink: 0; display: flex; align-items: center; gap: 10px; }
+
+.sidebar-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: color var(--transition), background var(--transition);
+}
+
+.sidebar-toggle:hover { color: var(--text-primary); background: var(--bg-hover); }
+.sidebar-toggle svg { width: 18px; height: 14px; }
 
 .logo {
   font-size: 1rem;
@@ -141,8 +169,8 @@ async function changeVault() {
 .app-body {
   display: flex;
   margin-top: var(--navbar-h);
-  flex: 1;
-  min-height: 0;
+  height: calc(100vh - var(--navbar-h));
+  overflow: hidden;
 }
 
 .main-content {
