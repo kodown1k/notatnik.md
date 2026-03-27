@@ -94,6 +94,40 @@ pre code {
   border-radius: var(--radius);
 }
 
+.code-block {
+  margin: 6px 0;
+  position: relative;
+}
+
+.code-block pre {
+  margin: 0;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow-x: auto;
+}
+
+.code-block pre code {
+  border: none;
+  border-radius: 0;
+  padding: 12px 16px;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--text-primary);
+  white-space: pre;
+}
+
+.code-lang {
+  display: block;
+  padding: 4px 12px 0;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.6;
+}
+
 /* Accessibility: screen-reader only */
 .sr-only {
   position: absolute;

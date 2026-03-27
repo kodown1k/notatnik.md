@@ -53,9 +53,12 @@ export function parse(markdown: string, filename: string): MdDocument {
     | { kind: 'item'; item: MdItem }
     | { kind: 'table'; rows: string[][] }
     | { kind: 'text'; text: string }
+    | { kind: 'code'; lang: string; code: string }
 
   const nodes: RawNode[] = []
   let inCode = false
+  let codeLang = ''
+  let codeLines: string[] = []
   let tableBuffer: string[] = []
 
   function flushTable() {
@@ -72,12 +75,18 @@ export function parse(markdown: string, filename: string): MdDocument {
   for (const line of lines) {
     if (line.startsWith('```')) {
       flushTable()
-      inCode = !inCode
-      nodes.push({ kind: 'text', text: line })
+      if (!inCode) {
+        inCode = true
+        codeLang = line.slice(3).trim()
+        codeLines = []
+      } else {
+        inCode = false
+        nodes.push({ kind: 'code', lang: codeLang, code: codeLines.join('\n') })
+      }
       continue
     }
     if (inCode) {
-      nodes.push({ kind: 'text', text: line })
+      codeLines.push(line)
       continue
     }
 
@@ -189,6 +198,8 @@ export function parse(markdown: string, filename: string): MdDocument {
       pushItem(node.item)
     } else if (node.kind === 'table') {
       pushItem({ type: 'table', rows: node.rows })
+    } else if (node.kind === 'code') {
+      pushItem({ type: 'code', lang: node.lang, code: node.code })
     } else if (node.kind === 'text') {
       pushItem({ type: 'text', text: node.text })
     }

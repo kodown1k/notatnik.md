@@ -48,6 +48,11 @@ const ItemList = defineComponent({
               ])]
             )
           }
+          if (item.type === 'code') {
+            return h('div', { class: 'code-block', key: item.code },
+              [h('pre', item.lang ? [h('span', { class: 'code-lang' }, item.lang), h('code', {}, item.code ?? '')] : [h('code', {}, item.code ?? '')])]
+            )
+          }
           return h('div', { class: 'prd-text', key: item.text, innerHTML: mdInline(item.text ?? '') })
         })
       )

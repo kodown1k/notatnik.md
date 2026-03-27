@@ -31,6 +31,8 @@ export interface MdItem {
   checked?: boolean   // only for type=task
   hash?: number       // djb2 hash of text, for localStorage keying
   rows?: string[][]   // only for type=table: [row][col]
+  lang?: string       // only for type=code: language identifier (e.g. "sql", "ts")
+  code?: string       // only for type=code: raw code content
 }
 
 export interface MdSubsection {
