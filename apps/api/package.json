@@ -1,0 +1,14 @@
+{
+  "name": "@notatnik/api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "hono": "^4.6.0",
+    "chokidar": "^3.6.0",
+    "@notatnik/shared": "workspace:*"
+  }
+}
