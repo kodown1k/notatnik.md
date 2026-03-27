@@ -1,6 +1,6 @@
 // apps/api/src/routes/files.ts
 import { Hono } from 'hono'
-import { readdirSync, readFileSync, statSync, existsSync } from 'fs'
+import { readdirSync, readFileSync, statSync, existsSync, realpathSync } from 'fs'
 import { join, resolve, normalize } from 'path'
 import { getVaultPath } from './vault'
 import type { FileInfo } from '@notatnik/shared'
@@ -62,6 +62,19 @@ filesRoutes.get('/:filename', (c) => {
 
   if (!existsSync(filePath)) {
     return c.json({ error: 'not found' }, 404)
+  }
+
+  // Resolve symlinks and verify file is still within vault
+  let realFilePath: string
+  let realVaultPath: string
+  try {
+    realFilePath = realpathSync(filePath)
+    realVaultPath = realpathSync(vaultPath)
+  } catch {
+    return c.json({ error: 'not found' }, 404)
+  }
+  if (!realFilePath.startsWith(realVaultPath + '/') && realFilePath !== realVaultPath) {
+    return c.json({ error: 'invalid filename' }, 400)
   }
 
   const stat = statSync(filePath)

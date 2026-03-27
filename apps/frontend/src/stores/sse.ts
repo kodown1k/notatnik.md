@@ -58,6 +58,7 @@ export const useSseStore = defineStore('sse', () => {
       connected.value = false
       es?.close()
       es = null
+      if (retryTimeout) clearTimeout(retryTimeout)
       retryTimeout = setTimeout(connect, 3000)
     }
   }

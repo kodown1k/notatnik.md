@@ -61,7 +61,7 @@ export function parse(markdown: string, filename: string): MdDocument {
   function flushTable() {
     if (tableBuffer.length === 0) return
     const rows = tableBuffer
-      .filter((l) => !/^\|[\s\-:|]+\|$/.test(l.trim()))
+      .filter((l) => !/^\|(\s*:?-+:?\s*\|)+$/.test(l.trim()))
       .map((l) =>
         l.trim().replace(/^\||\|$/g, '').split('|').map((cell) => cell.trim())
       )
@@ -142,20 +142,49 @@ export function parse(markdown: string, filename: string): MdDocument {
       chapters.push(curChapter)
     } else if (node.kind === 'h3') {
       curSubsection = null
+      // If no chapter exists yet, create an implicit one
+      if (!curChapter) {
+        curChapter = {
+          title: '',
+          progress: { total: 0, checked: 0, pct: 0 },
+          sections: [],
+          items: [],
+        }
+        chapters.push(curChapter)
+      }
       curSection = {
         title: node.text,
         progress: { total: 0, checked: 0, pct: 0 },
         subsections: [],
         items: [],
       }
-      if (curChapter) curChapter.sections.push(curSection)
+      curChapter.sections.push(curSection)
     } else if (node.kind === 'h4') {
+      // If no section exists yet, create an implicit one
+      if (!curSection) {
+        if (!curChapter) {
+          curChapter = {
+            title: '',
+            progress: { total: 0, checked: 0, pct: 0 },
+            sections: [],
+            items: [],
+          }
+          chapters.push(curChapter)
+        }
+        curSection = {
+          title: '',
+          progress: { total: 0, checked: 0, pct: 0 },
+          subsections: [],
+          items: [],
+        }
+        curChapter.sections.push(curSection)
+      }
       curSubsection = {
         title: node.text,
         progress: { total: 0, checked: 0, pct: 0 },
         items: [],
       }
-      if (curSection) curSection.subsections.push(curSubsection)
+      curSection.subsections.push(curSubsection)
     } else if (node.kind === 'item') {
       pushItem(node.item)
     } else if (node.kind === 'table') {
