@@ -3,6 +3,8 @@ import { Hono } from 'hono'
 import { existsSync, statSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import type { VaultConfig } from '@notatnik/shared'
+import { startWatcher } from '../watcher'
+import type { SseEvent } from '@notatnik/shared'
 
 const SETTINGS_PATH = join(import.meta.dir, '../../../../settings.json')
 
@@ -23,6 +25,17 @@ function saveSettings(config: VaultConfig) {
 
 // In-memory state — single source of truth during runtime
 let vaultConfig: VaultConfig = loadSettings()
+startWatcher(vaultConfig.path)
+
+const vaultListeners = new Set<(event: SseEvent) => void>()
+
+export function addVaultListener(fn: (event: SseEvent) => void) {
+  vaultListeners.add(fn)
+}
+
+export function removeVaultListener(fn: (event: SseEvent) => void) {
+  vaultListeners.delete(fn)
+}
 
 export function getVaultPath(): string {
   return vaultConfig.path
@@ -31,6 +44,8 @@ export function getVaultPath(): string {
 export function setVaultPath(path: string) {
   vaultConfig = { path }
   saveSettings(vaultConfig)
+  startWatcher(path)
+  for (const fn of vaultListeners) fn({ type: 'vault:changed', path })
 }
 
 export const vaultRoutes = new Hono()
