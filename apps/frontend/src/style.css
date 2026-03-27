@@ -1,0 +1,92 @@
+/* apps/frontend/src/style.css */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --navbar-h: 56px;
+  --sidebar-w: 240px;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --radius: 6px;
+  --transition: 150ms ease;
+}
+
+/* Dark theme (default) */
+[data-theme="dark"] {
+  --bg-primary:    #0f0e0d;
+  --bg-elevated:   #1a1917;
+  --bg-sidebar:    #141311;
+  --bg-hover:      #242220;
+  --text-primary:  #e8e6e1;
+  --text-secondary:#a09d96;
+  --accent:        #f59e0b;
+  --accent-hover:  #fbbf24;
+  --progress-fill: #f59e0b;
+  --progress-bg:   #2a2825;
+  --border:        #2a2825;
+  --neutral-700:   #3a3835;
+  --code-bg:       #1e1c1a;
+}
+
+/* Light theme */
+[data-theme="light"] {
+  --bg-primary:    #fafaf9;
+  --bg-elevated:   #ffffff;
+  --bg-sidebar:    #f0eeea;
+  --bg-hover:      #e8e6e2;
+  --text-primary:  #1c1b19;
+  --text-secondary:#6b6860;
+  --accent:        #d97706;
+  --accent-hover:  #b45309;
+  --progress-fill: #d97706;
+  --progress-bg:   #e5e3de;
+  --border:        #ddd9d3;
+  --neutral-700:   #d1cfc9;
+  --code-bg:       #f5f3ef;
+}
+
+html, body, #app {
+  height: 100%;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-hover); text-decoration: underline; }
+
+code {
+  font-family: var(--font-mono);
+  background: var(--code-bg);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 0.875em;
+}
+
+pre code {
+  display: block;
+  padding: 12px 16px;
+  overflow-x: auto;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* Accessibility: screen-reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
