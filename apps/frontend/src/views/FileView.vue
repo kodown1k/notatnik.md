@@ -164,18 +164,18 @@ function walkTasks(d: MdDocument, fn: (item: MdItem) => void) {
 
 .doc-progress {
   position: sticky;
-  top: calc(var(--navbar-h) + 8px);
+  top: 0;
   z-index: 15;
-  background: rgba(15, 14, 13, 0.8);
-  backdrop-filter: blur(18px) saturate(1.4);
+  background: rgba(15, 14, 13, 0.85);
+  backdrop-filter: blur(20px) saturate(1.4);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 12px 16px;
-  margin-bottom: 20px;
+  padding: 10px 16px 12px;
+  margin-bottom: 4px;
 }
 
 [data-theme="light"] .doc-progress {
-  background: rgba(250, 250, 249, 0.9);
+  background: rgba(250, 250, 249, 0.92);
 }
 
 .loading, .error {

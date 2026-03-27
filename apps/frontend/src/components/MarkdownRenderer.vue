@@ -31,37 +31,52 @@
       </template>
     </div>
 
-    <!-- Chapters -->
+    <!-- Chapters (##) -->
     <section v-for="chapter in doc.chapters" :key="chapter.title" class="section-card">
+      <!-- Sticky chapter header — padding-top covers inter-card gap with blur -->
       <div class="section-header">
         <h2>{{ chapter.title }}</h2>
         <ProgressBar :total="chapter.progress.total" :checked="chapter.progress.checked"
           level="chapter" />
       </div>
-      <div class="section-body">
 
-        <!-- Chapter-level items -->
+      <div class="section-body">
+        <!-- Chapter-level items (before first ###) -->
         <ItemList :items="chapter.items" :filename="filename" @toggle="(item) => emit('toggle', item)" />
 
-        <!-- Sections -->
+        <!-- Sections (###) -->
         <div v-for="section in chapter.sections" :key="section.title" class="subsection">
-          <h3>{{ section.title }}</h3>
-          <ProgressBar v-if="section.progress.total > 0"
-            :total="section.progress.total" :checked="section.progress.checked"
-            level="section" />
 
-          <ItemList :items="section.items" :filename="filename" @toggle="(item) => emit('toggle', item)" />
-
-          <!-- Subsections -->
-          <div v-for="sub in section.subsections" :key="sub.title" class="subsubsection">
-            <h4>{{ sub.title }}</h4>
-            <ProgressBar v-if="sub.progress.total > 0"
-              :total="sub.progress.total" :checked="sub.progress.checked"
-              level="subsection" />
-            <ItemList :items="sub.items" :filename="filename" @toggle="(item) => emit('toggle', item)" />
+          <!-- Sticky section header -->
+          <div class="subsection-header">
+            <h3>{{ section.title }}</h3>
+            <ProgressBar v-if="section.progress.total > 0"
+              :total="section.progress.total" :checked="section.progress.checked"
+              level="section" />
           </div>
-        </div>
 
+          <div class="subsection-body">
+            <ItemList :items="section.items" :filename="filename" @toggle="(item) => emit('toggle', item)" />
+
+            <!-- Subsections (####) -->
+            <div v-for="sub in section.subsections" :key="sub.title" class="subsubsection">
+
+              <!-- Sticky subsection header -->
+              <div class="subsubsection-header">
+                <h4>{{ sub.title }}</h4>
+                <ProgressBar v-if="sub.progress.total > 0"
+                  :total="sub.progress.total" :checked="sub.progress.checked"
+                  level="subsection" />
+              </div>
+
+              <div class="subsubsection-body">
+                <ItemList :items="sub.items" :filename="filename" @toggle="(item) => emit('toggle', item)" />
+              </div>
+
+            </div>
+          </div>
+
+        </div>
       </div>
     </section>
   </div>
@@ -85,50 +100,141 @@ function itemKey(item: MdItem) {
 </script>
 
 <style scoped>
-.md-root { display: flex; flex-direction: column; gap: 24px; }
+/* ── Layout ─────────────────────────────────── */
+
+/* No gap between cards — gap lives inside each header's padding-top (blurred) */
+.md-root { display: flex; flex-direction: column; gap: 0; }
 
 .section-card {
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  overflow: clip;
+  overflow: clip;        /* clip (not hidden) — sticky children still work */
+  margin-bottom: 2px;    /* thin separator so borders don't double up */
 }
 
+/* ── Sticky levels ──────────────────────────── */
+/*
+  Stack (relative to .main-content scroll container, which starts below the navbar):
+    doc-progress  : top: 0         h ≈ 54px
+    section (##)  : top: 54px      h ≈ 80px
+    subsection (###) : top: 134px  h ≈ 54px
+    subsubsection (####): top: 188px
+*/
+
+/* ## — chapter header */
 .section-header {
   position: sticky;
-  top: 150px;
+  top: 54px;          /* right below doc-progress */
   z-index: 10;
-  background: rgba(20, 18, 16, 0.85);
-  backdrop-filter: blur(16px) saturate(1.3);
-  padding: 12px 16px;
+  /* padding-top includes the inter-card gap → covered by blur */
+  padding: 20px 16px 10px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  background: rgba(16, 15, 13, 0.88);
+  backdrop-filter: blur(20px) saturate(1.4);
   border-bottom: 1px solid var(--border);
 }
 
 [data-theme="light"] .section-header {
-  background: rgba(250, 250, 249, 0.9);
+  background: rgba(250, 249, 248, 0.92);
 }
 
 .section-header h2 {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+/* ### — section header */
+.subsection-header {
+  position: sticky;
+  top: 134px;         /* doc 54 + chapter 80 */
+  z-index: 9;
+  padding: 14px 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: rgba(18, 17, 15, 0.82);
+  backdrop-filter: blur(16px) saturate(1.3);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+[data-theme="light"] .subsection-header {
+  background: rgba(248, 247, 245, 0.88);
+  border-bottom-color: rgba(0,0,0,0.06);
+}
+
+.subsection-header h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
   color: var(--text-primary);
 }
 
-.section-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+/* #### — subsection header */
+.subsubsection-header {
+  position: sticky;
+  top: 188px;         /* doc 54 + chapter 80 + section 54 */
+  z-index: 8;
+  padding: 10px 12px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(20, 18, 16, 0.75);
+  backdrop-filter: blur(12px) saturate(1.2);
+  border-left: 2px solid var(--accent);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  margin-left: 0;
+}
 
-.subsection { margin-top: 8px; }
-.subsection h3 { font-size: 1rem; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); }
-.subsubsection { margin-top: 6px; padding-left: 12px; border-left: 2px solid var(--border); }
-.subsubsection h4 { font-size: 0.9rem; font-weight: 500; margin-bottom: 4px; color: var(--text-secondary); }
+[data-theme="light"] .subsubsection-header {
+  background: rgba(246, 244, 242, 0.85);
+  border-bottom-color: rgba(0,0,0,0.05);
+}
+
+.subsubsection-header h4 {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* ── Content areas ──────────────────────────── */
+
+.section-body {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.subsection {
+  margin-top: 0;
+}
+
+.subsection-body {
+  padding: 8px 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.subsubsection {
+  margin-top: 0;
+}
+
+.subsubsection-body {
+  padding: 6px 12px 8px;
+}
+
+/* ── Tasks ──────────────────────────────────── */
 
 .task-label {
   display: flex;
   align-items: flex-start;
   gap: 8px;
   cursor: pointer;
-  padding: 2px 0;
+  padding: 3px 0;
   line-height: 1.5;
 }
 
@@ -157,7 +263,9 @@ function itemKey(item: MdItem) {
 
 .task-done { text-decoration: line-through; opacity: 0.5; }
 
-.prd-text { color: var(--text-secondary); font-size: 0.9rem; }
+/* ── Text / Tables ──────────────────────────── */
+
+.prd-text { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; }
 
 .prd-text :deep(.prd-table) { width: 100%; border-collapse: collapse; }
 .prd-text :deep(.prd-table th) {
