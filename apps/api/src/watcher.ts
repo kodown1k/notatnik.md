@@ -30,7 +30,8 @@ export function startWatcher(vaultPath: string) {
   watcher = chokidar.watch(vaultPath, {
     ignoreInitial: true,
     depth: 0,
-    usePolling: false,
+    usePolling: true,
+    interval: 800,
   })
 
   watcher.on('change', (filePath) => {
