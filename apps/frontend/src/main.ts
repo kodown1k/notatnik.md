@@ -4,7 +4,9 @@ import { createPinia } from 'pinia'
 import { router } from './router'
 import App from './App.vue'
 import './style.css'
+import 'highlight.js/styles/atom-one-dark.css'
 import { mdInline } from './parser'
+import { highlight } from './highlight'
 import type { MdItem } from '@notatnik/shared'
 
 // ItemList: renders a list of MdItems (tasks, tables, text)
@@ -49,9 +51,13 @@ const ItemList = defineComponent({
             )
           }
           if (item.type === 'code') {
-            return h('div', { class: 'code-block', key: item.code },
-              [h('pre', item.lang ? [h('span', { class: 'code-lang' }, item.lang), h('code', {}, item.code ?? '')] : [h('code', {}, item.code ?? '')])]
-            )
+            const highlighted = highlight(item.code ?? '', item.lang ?? '')
+            return h('div', { class: 'code-block', key: item.code }, [
+              h('pre', [
+                item.lang ? h('span', { class: 'code-lang' }, item.lang) : null,
+                h('code', { class: 'hljs', innerHTML: highlighted }),
+              ])
+            ])
           }
           return h('div', { class: 'prd-text', key: item.text, innerHTML: mdInline(item.text ?? '') })
         })
