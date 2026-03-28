@@ -22,20 +22,24 @@ sseRoutes.get('/', (c) => {
     addSseListener(send)
     addVaultListener(send)
 
-    const heartbeat = setInterval(async () => {
+    // Resolve when client disconnects so the sleep loop can exit quickly
+    let resolveAbort!: () => void
+    const abortPromise = new Promise<void>(r => { resolveAbort = r })
+    stream.onAbort(resolveAbort)
+
+    // Keep connection alive with periodic pings; stream.pipe() must NOT be used
+    // because it calls writer.releaseLock(), causing all subsequent writeSSE() to silently fail
+    while (!stream.aborted) {
+      await Promise.race([abortPromise, stream.sleep(25_000)])
+      if (stream.aborted) break
       try {
         await stream.writeSSE({ data: 'ping' })
       } catch {
-        // client disconnected
+        break
       }
-    }, 30_000)
+    }
 
-    await stream.pipe(new ReadableStream({
-      cancel() {
-        clearInterval(heartbeat)
-        removeSseListener(send)
-        removeVaultListener(send)
-      },
-    }))
+    removeSseListener(send)
+    removeVaultListener(send)
   })
 })

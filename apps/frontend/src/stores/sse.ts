@@ -49,6 +49,10 @@ export const useSseStore = defineStore('sse', () => {
         }
       } else if (parsed.type === 'file:added' || parsed.type === 'file:removed') {
         vaultStore.refreshFiles()
+        // Atomic saves (unlink+rename) fire 'file:added' instead of 'file:changed'
+        if (parsed.type === 'file:added' && parsed.filename === currentFile.value) {
+          onCurrentFileChanged?.()
+        }
       } else if (parsed.type === 'vault:changed') {
         vaultStore.loadVault()
       }
