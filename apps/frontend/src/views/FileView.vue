@@ -31,6 +31,7 @@ import { useSseStore } from '../stores/sse'
 import ProgressBar from '../components/ProgressBar.vue'
 import MarkdownRenderer from '../components/MarkdownRenderer.vue'
 import type { MdDocument, MdItem, MdChapter, MdSection, MdSubsection, Progress } from '@notatnik/shared'
+import { computeDiff, type DiffLine } from '../diff'
 
 const route = useRoute()
 const vaultStore = useVaultStore()
@@ -40,6 +41,9 @@ const doc = ref<MdDocument | null>(null)
 const loading = ref(false)
 const error = ref('')
 let lastEtag = ''
+const rawText = ref('')
+const pendingText = ref<string | null>(null)
+const diffLines = ref<DiffLine[]>([])
 
 const currentFilename = computed(() => {
   const p = route.params.path
@@ -95,6 +99,7 @@ async function loadFile(silent = false) {
     lastEtag = res.headers.get('ETag') ?? ''
     const text = await res.text()
     doc.value = parse(text, currentFilename.value)
+    rawText.value = text
     loadProgress()
   } catch {
     error.value = 'Błąd ładowania pliku'
@@ -103,10 +108,51 @@ async function loadFile(silent = false) {
   }
 }
 
+async function fetchAndDiff() {
+  try {
+    const res = await fetch(`/api/files/${currentFilename.value}`, {
+      headers: lastEtag ? { 'If-None-Match': lastEtag } : {},
+    })
+    if (res.status === 304) return
+    if (!res.ok) return
+
+    lastEtag = res.headers.get('ETag') ?? ''
+    const newText = await res.text()
+    const lines = computeDiff(rawText.value, newText)
+
+    if (lines.length === 0) {
+      // No visible changes — silent reload
+      doc.value = parse(newText, currentFilename.value)
+      rawText.value = newText
+      loadProgress()
+      return
+    }
+
+    pendingText.value = newText
+    diffLines.value = lines
+  } catch {
+    // Silently ignore fetch errors during background diff
+  }
+}
+
+function acceptDiff() {
+  if (!pendingText.value) return
+  doc.value = parse(pendingText.value, currentFilename.value)
+  rawText.value = pendingText.value
+  loadProgress()
+  pendingText.value = null
+  diffLines.value = []
+}
+
+function dismissDiff() {
+  pendingText.value = null
+  diffLines.value = []
+}
+
 onMounted(() => {
   loadFile()
   vaultStore.clearChanged(currentFilename.value)
-  sseStore.setCurrentFile(currentFilename.value, () => loadFile(true))
+  sseStore.setCurrentFile(currentFilename.value, fetchAndDiff)
 })
 
 onUnmounted(() => {
@@ -116,9 +162,11 @@ onUnmounted(() => {
 watch(currentFilename, () => {
   lastEtag = ''
   doc.value = null
+  pendingText.value = null
+  diffLines.value = []
   loadFile()
   vaultStore.clearChanged(currentFilename.value)
-  sseStore.setCurrentFile(currentFilename.value, () => loadFile(true))
+  sseStore.setCurrentFile(currentFilename.value, fetchAndDiff)
 })
 
 // --- Progress recomputation helpers ---
