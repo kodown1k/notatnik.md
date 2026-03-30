@@ -12,6 +12,7 @@ export interface TreeNode {
 
 export interface VaultConfig {
   path: string
+  readonly?: boolean  // true when vault is set via VAULT_PATH env var
 }
 
 export type SseEvent =

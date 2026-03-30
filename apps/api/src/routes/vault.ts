@@ -52,7 +52,10 @@ export function setVaultPath(path: string) {
 
 export const vaultRoutes = new Hono()
 
-vaultRoutes.get('/', (c) => c.json(vaultConfig))
+vaultRoutes.get('/', (c) => c.json({
+  ...vaultConfig,
+  readonly: !!process.env.VAULT_PATH,
+}))
 
 vaultRoutes.post('/', async (c) => {
   const body = await c.req.json<{ path: string }>()

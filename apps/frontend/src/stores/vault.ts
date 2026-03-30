@@ -5,6 +5,7 @@ import type { TreeNode } from '@notatnik/shared'
 
 export const useVaultStore = defineStore('vault', () => {
   const vaultPath = ref('')
+  const vaultReadonly = ref(false)
   const tree = ref<TreeNode[]>([])
   const changedFiles = reactive(new Set<string>())  // relative paths with unseen changes
   const fileSnapshots = new Map<string, string>()   // last known content per file (for diff-on-navigate)
@@ -41,6 +42,7 @@ export const useVaultStore = defineStore('vault', () => {
     const res = await fetch('/api/vault')
     const data = await res.json()
     vaultPath.value = data.path ?? ''
+    vaultReadonly.value = !!data.readonly
     if (vaultPath.value) await refreshFiles()
   }
 
@@ -78,6 +80,7 @@ export const useVaultStore = defineStore('vault', () => {
 
   return {
     vaultPath,
+    vaultReadonly,
     tree,
     changedFiles,
     getHistory,

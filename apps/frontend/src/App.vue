@@ -15,7 +15,7 @@
       </div>
       <div class="navbar-center">
         <input
-          v-if="vaultStore.vaultPath"
+          v-if="vaultStore.vaultPath && !vaultStore.vaultReadonly"
           v-model="pathInput"
           type="text"
           class="vault-input"

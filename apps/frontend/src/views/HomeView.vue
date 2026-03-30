@@ -3,25 +3,31 @@
   <div class="home">
     <div class="home-card">
       <h1>notatnik.md</h1>
-      <p class="subtitle">Otwórz katalog z plikami Markdown</p>
 
-      <div class="input-row">
-        <input
-          v-model="pathInput"
-          type="text"
-          placeholder="/ścieżka/do/katalogu"
-          list="vault-history"
-          @keydown.enter="openVault"
-          :class="{ error: errorMsg }"
-        />
-        <datalist id="vault-history">
-          <option v-for="h in history" :key="h" :value="h" />
-        </datalist>
-        <button @click="openVault" :disabled="!pathInput.trim()">Otwórz</button>
-      </div>
+      <template v-if="vaultStore.vaultReadonly">
+        <p class="subtitle">Vault: <code>{{ vaultStore.vaultPath }}</code></p>
+        <p class="hint">Wybierz plik z panelu bocznego.</p>
+      </template>
 
-      <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
-      <p v-if="loading" class="loading">Ładowanie...</p>
+      <template v-else>
+        <p class="subtitle">Otwórz katalog z plikami Markdown</p>
+        <div class="input-row">
+          <input
+            v-model="pathInput"
+            type="text"
+            placeholder="/ścieżka/do/katalogu"
+            list="vault-history"
+            @keydown.enter="openVault"
+            :class="{ error: errorMsg }"
+          />
+          <datalist id="vault-history">
+            <option v-for="h in history" :key="h" :value="h" />
+          </datalist>
+          <button @click="openVault" :disabled="!pathInput.trim()">Otwórz</button>
+        </div>
+        <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
+        <p v-if="loading" class="loading">Ładowanie...</p>
+      </template>
     </div>
   </div>
 </template>
@@ -126,4 +132,6 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .error-msg { color: #ef4444; font-size: 0.85rem; }
 .loading { color: var(--text-secondary); font-size: 0.85rem; }
+.hint { color: var(--text-secondary); font-size: 0.85rem; }
+code { font-family: var(--font-mono); font-size: 0.82rem; color: var(--accent); }
 </style>
