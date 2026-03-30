@@ -31,6 +31,7 @@ function buildTree(dirPath: string, vaultPath: string): TreeNode[] {
     const relPath = relative(vaultPath, fullPath)
 
     if (entry.isDirectory()) {
+      if (entry.name === 'node_modules') continue
       const children = buildTree(fullPath, vaultPath)
       if (children.length > 0) {
         dirs.push({ type: 'dir', name: entry.name, path: relPath, children })

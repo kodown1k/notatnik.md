@@ -34,6 +34,7 @@ export function startWatcher(vaultPath: string) {
     usePolling: true,
     interval: 800,
     followSymlinks: false,
+    ignored: /(^|[/\\])node_modules([/\\]|$)/,
   })
 
   watcher.on('change', (filePath) => {
