@@ -233,6 +233,11 @@ onUnmounted(() => {
   sseStore.clearCurrentFile()
 })
 
+function scrollToTop() {
+  const el = document.querySelector('.main-content')
+  if (el) el.scrollTop = 0
+}
+
 watch(currentFilename, (newFilename, oldFilename) => {
   if (oldFilename && rawText.value) vaultStore.saveSnapshot(oldFilename, rawText.value)
   lastEtag = ''
@@ -241,6 +246,7 @@ watch(currentFilename, (newFilename, oldFilename) => {
   doc.value = null
   pendingText.value = null
   diffLines.value = []
+  scrollToTop()
   loadFileOrDiff()
   sseStore.setCurrentFile(newFilename, fetchAndDiff)
 })
