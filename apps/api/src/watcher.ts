@@ -33,6 +33,7 @@ export function startWatcher(vaultPath: string) {
     depth: undefined,
     usePolling: true,
     interval: 800,
+    followSymlinks: false,
   })
 
   watcher.on('change', (filePath) => {
