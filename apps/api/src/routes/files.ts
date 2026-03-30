@@ -88,11 +88,7 @@ filesRoutes.get('/*', (c) => {
     return c.json({ error: 'invalid filename' }, 400)
   }
 
-  if (!existsSync(filePath)) {
-    return c.json({ error: 'not found' }, 404)
-  }
-
-  // Resolve symlinks and re-verify
+  // Resolve symlinks and re-verify (also catches ENOENT, ELOOP, etc.)
   let realFilePath: string
   let realVaultPath: string
   try {
@@ -105,7 +101,12 @@ filesRoutes.get('/*', (c) => {
     return c.json({ error: 'invalid filename' }, 400)
   }
 
-  const stat = statSync(filePath)
+  let stat
+  try {
+    stat = statSync(filePath)
+  } catch {
+    return c.json({ error: 'not found' }, 404)
+  }
   const etag = `"${stat.mtimeMs}"`
   const ifNoneMatch = c.req.header('If-None-Match')
   if (ifNoneMatch === etag) {
