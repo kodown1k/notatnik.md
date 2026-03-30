@@ -1,24 +1,18 @@
 <!-- apps/frontend/src/components/Sidebar.vue -->
 <template>
   <nav class="sidebar">
-    <ul class="file-list">
-      <li v-if="!flatFiles.length" class="no-files">
+    <ul class="tree-root">
+      <li v-if="!vaultStore.tree.length" class="no-files">
         Brak plików .md w vaultcie
       </li>
-      <li
-        v-for="file in flatFiles"
-        :key="file.path"
-        class="file-item"
-        :class="{ active: currentPath === file.path }"
-        @click="openFile(file.path)"
-      >
-        <span class="file-name">{{ file.path }}</span>
-        <span
-          v-if="vaultStore.changedFiles.has(file.path) && currentPath !== file.path"
-          class="change-dot"
-          title="Plik zmieniony"
-        />
-      </li>
+      <TreeItem
+        v-for="node in vaultStore.tree"
+        :key="node.path"
+        :node="node"
+        :current-path="currentPath"
+        :changed-files="vaultStore.changedFiles"
+        @open="openFile"
+      />
     </ul>
   </nav>
 </template>
@@ -27,6 +21,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useVaultStore } from '../stores/vault'
+import TreeItem from './TreeItem.vue'
 import type { TreeNode } from '@notatnik/shared'
 
 const vaultStore = useVaultStore()
@@ -39,20 +34,9 @@ const currentPath = computed(() => {
   return name.endsWith('.md') ? name : `${name}.md`
 })
 
-function flattenTree(nodes: TreeNode[]): TreeNode[] {
-  const result: TreeNode[] = []
-  for (const node of nodes) {
-    if (node.type === 'file') result.push(node)
-    else if (node.children) result.push(...flattenTree(node.children))
-  }
-  return result
-}
-
-const flatFiles = computed(() => flattenTree(vaultStore.tree))
-
-function openFile(path: string) {
-  vaultStore.clearChanged(path)
-  router.push(`/${path}`)
+function openFile(node: TreeNode) {
+  vaultStore.clearChanged(node.path)
+  router.push(`/${node.path}`)
 }
 </script>
 
@@ -72,46 +56,11 @@ function openFile(path: string) {
   border-right: none;
 }
 
-.file-list { list-style: none; padding: 8px 0; }
+.tree-root { list-style: none; padding: 8px 0; margin: 0; }
 
 .no-files {
   padding: 12px 16px;
   color: var(--text-secondary);
   font-size: 0.85rem;
-}
-
-.file-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 16px;
-  cursor: pointer;
-  transition: background var(--transition);
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-}
-
-.file-item:hover { background: var(--bg-hover); color: var(--text-primary); }
-
-.file-item.active {
-  background: var(--bg-hover);
-  color: var(--accent);
-  font-weight: 600;
-  border-right: 2px solid var(--accent);
-}
-
-.file-name {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.change-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--accent);
-  flex-shrink: 0;
 }
 </style>
