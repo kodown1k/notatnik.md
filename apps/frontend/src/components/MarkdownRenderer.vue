@@ -193,7 +193,7 @@ function handleAnchorClick(e: MouseEvent) {
 /* #### — subsection header */
 .subsubsection-header {
   position: sticky;
-  top: 188px;         /* doc 54 + chapter 80 + section 54 */
+  top: 214px;
   z-index: 8;
   padding: 10px 12px 6px;
   display: flex;
