@@ -2,7 +2,7 @@ services:
   notatnik:
     build: .
     ports:
-      - "3001:3001"
+      - "3010:3001"
     volumes:
       - /home/perun/Code/docs:/vault:ro
     environment:
