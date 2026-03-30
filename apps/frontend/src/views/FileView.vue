@@ -136,6 +136,7 @@ async function loadFile(silent = false) {
 
 async function fetchAndDiff() {
   if (diffInFlight) return
+  if (rawText.value === '') return  // initial load not yet complete
   diffInFlight = true
   try {
     const res = await fetch(`/api/files/${currentFilename.value}`, {
@@ -178,10 +179,6 @@ function acceptDiff() {
 }
 
 function dismissDiff() {
-  if (pendingText.value) {
-    rawText.value = pendingText.value
-    lastEtag = pendingEtag
-  }
   pendingText.value = null
   diffLines.value = []
 }
@@ -198,6 +195,7 @@ onUnmounted(() => {
 
 watch(currentFilename, () => {
   lastEtag = ''
+  pendingEtag = ''
   doc.value = null
   pendingText.value = null
   diffLines.value = []
