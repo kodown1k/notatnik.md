@@ -7,6 +7,6 @@ export const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', component: HomeView },
-    { path: '/:filename', component: FileView },
+    { path: '/:path(.*)', component: FileView },
   ],
 })
