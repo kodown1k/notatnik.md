@@ -35,7 +35,6 @@ const currentPath = computed(() => {
 })
 
 function openFile(node: TreeNode) {
-  vaultStore.clearChanged(node.path)
   router.push(`/${node.path}`)
 }
 </script>

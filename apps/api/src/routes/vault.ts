@@ -9,6 +9,7 @@ import type { SseEvent } from '@notatnik/shared'
 const SETTINGS_PATH = join(import.meta.dir, '../../../../settings.json')
 
 function loadSettings(): VaultConfig {
+  if (process.env.VAULT_PATH) return { path: process.env.VAULT_PATH }
   if (existsSync(SETTINGS_PATH)) {
     try {
       return JSON.parse(readFileSync(SETTINGS_PATH, 'utf8'))
@@ -20,6 +21,7 @@ function loadSettings(): VaultConfig {
 }
 
 function saveSettings(config: VaultConfig) {
+  if (process.env.VAULT_PATH) return  // env var takes precedence, skip file writes
   writeFileSync(SETTINGS_PATH, JSON.stringify(config, null, 2))
 }
 

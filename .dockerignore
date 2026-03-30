@@ -1,0 +1,7 @@
+node_modules
+apps/frontend/dist
+apps/frontend/node_modules
+apps/api/node_modules
+packages/shared/node_modules
+.git
+docs/superpowers

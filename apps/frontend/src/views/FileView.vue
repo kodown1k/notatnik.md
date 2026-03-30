@@ -187,8 +187,10 @@ function dismissDiff() {
 async function loadFileOrDiff() {
   const filename = currentFilename.value
   const snapshot = vaultStore.getSnapshot(filename)
+  const wasChanged = vaultStore.changedFiles.has(filename)
+  vaultStore.clearChanged(filename)
 
-  if (snapshot !== null && vaultStore.changedFiles.has(filename)) {
+  if (snapshot !== null && wasChanged) {
     loading.value = true
     error.value = ''
     try {
@@ -223,7 +225,6 @@ async function loadFileOrDiff() {
 
 onMounted(() => {
   loadFileOrDiff()
-  vaultStore.clearChanged(currentFilename.value)
   sseStore.setCurrentFile(currentFilename.value, fetchAndDiff)
 })
 
@@ -241,7 +242,6 @@ watch(currentFilename, (newFilename, oldFilename) => {
   pendingText.value = null
   diffLines.value = []
   loadFileOrDiff()
-  vaultStore.clearChanged(newFilename)
   sseStore.setCurrentFile(newFilename, fetchAndDiff)
 })
 
