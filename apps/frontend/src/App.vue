@@ -176,5 +176,6 @@ async function changeVault() {
   flex: 1;
   overflow-y: auto;
   min-width: 0;
+  background: var(--bg-primary);
 }
 </style>
