@@ -77,9 +77,8 @@ async function changeVault() {
   if (!path || path === vaultStore.vaultPath) return
   try {
     await vaultStore.setVault(path)
-    if (vaultStore.files.length > 0) {
-      router.push(`/${vaultStore.files[0].filename}`)
-    }
+    const first = vaultStore.firstFile()
+    if (first) router.push(`/${first.path}`)
   } catch (e: any) {
     alert(e.message ?? 'Błąd zmiany vaultu')
     pathInput.value = vaultStore.vaultPath
