@@ -98,8 +98,9 @@ export function parse(markdown: string, filename: string): MdDocument {
     }
 
     if (/^# /.test(line)) {
-      title = line.replace(/^# /, '').trim()
-      nodes.push({ kind: 'h1', text: title })
+      const text = line.replace(/^# /, '').trim()
+      if (title === filename) title = text  // only first # sets title
+      nodes.push({ kind: 'h1', text })
       continue
     }
     if (/^## /.test(line)) {
