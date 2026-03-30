@@ -1,62 +1,84 @@
 // apps/api/src/routes/files.ts
 import { Hono } from 'hono'
 import { readdirSync, readFileSync, statSync, existsSync, realpathSync } from 'fs'
-import { join, resolve, normalize } from 'path'
+import { join, resolve, relative } from 'path'
 import { getVaultPath } from './vault'
-import type { FileInfo } from '@notatnik/shared'
+import type { TreeNode } from '@notatnik/shared'
 
 export const filesRoutes = new Hono()
 
 // Security middleware: reject any request with directory traversal in path
 filesRoutes.use('/*', async (c, next) => {
-  const path = c.req.path
-  if (path.includes('..')) {
+  if (c.req.path.includes('..')) {
     return c.json({ error: 'invalid filename' }, 400)
   }
   return next()
 })
 
+function buildTree(dirPath: string, vaultPath: string): TreeNode[] {
+  let entries
+  try {
+    entries = readdirSync(dirPath, { withFileTypes: true })
+  } catch {
+    return []
+  }
+
+  const dirs: TreeNode[] = []
+  const files: TreeNode[] = []
+
+  for (const entry of entries) {
+    const fullPath = join(dirPath, entry.name)
+    const relPath = relative(vaultPath, fullPath)
+
+    if (entry.isDirectory()) {
+      const children = buildTree(fullPath, vaultPath)
+      if (children.length > 0) {
+        dirs.push({ type: 'dir', name: entry.name, path: relPath, children })
+      }
+    } else if (entry.isFile() && entry.name.endsWith('.md')) {
+      const stat = statSync(fullPath)
+      files.push({
+        type: 'file',
+        name: entry.name.replace(/\.md$/, ''),
+        path: relPath,
+        filename: relPath,
+        mtime: stat.mtimeMs,
+        size: stat.size,
+      })
+    }
+  }
+
+  dirs.sort((a, b) => a.name.localeCompare(b.name))
+  files.sort((a, b) => a.name.localeCompare(b.name))
+  return [...dirs, ...files]
+}
+
 filesRoutes.get('/', (c) => {
   const vaultPath = getVaultPath()
   if (!vaultPath || !existsSync(vaultPath)) {
-    return c.json([] as FileInfo[])
+    return c.json([] as TreeNode[])
   }
-
-  const entries = readdirSync(vaultPath, { withFileTypes: true })
-  const files: FileInfo[] = entries
-    .filter((e) => e.isFile() && e.name.endsWith('.md'))
-    .map((e) => {
-      const stat = statSync(join(vaultPath, e.name))
-      return {
-        name: e.name.replace(/\.md$/, ''),
-        filename: e.name,
-        mtime: stat.mtimeMs,
-        size: stat.size,
-      }
-    })
-    .sort((a, b) => a.name.localeCompare(b.name))
-
-  return c.json(files)
+  return c.json(buildTree(vaultPath, vaultPath))
 })
 
-filesRoutes.get('/:filename', (c) => {
+filesRoutes.get('/*', (c) => {
   const vaultPath = getVaultPath()
-  const filename = c.req.param('filename')
-
   if (!vaultPath) {
     return c.json({ error: 'vault not configured' }, 503)
   }
 
-  // Security: reject paths with directory traversal characters
-  const normalizedFilename = normalize(filename)
-  if (normalizedFilename.includes('/') || normalizedFilename.includes('\\') || normalizedFilename.includes('..')) {
+  // Extract relative path: remove leading "/"
+  const relPath = c.req.path.slice(1)
+  if (!relPath) {
     return c.json({ error: 'invalid filename' }, 400)
   }
 
-  const filePath = join(vaultPath, filename.endsWith('.md') ? filename : `${filename}.md`)
+  const filePath = join(vaultPath, relPath.endsWith('.md') ? relPath : `${relPath}.md`)
 
-  // Secondary check: resolved path must be within vault
-  if (!resolve(filePath).startsWith(resolve(vaultPath) + '/') && resolve(filePath) !== resolve(vaultPath)) {
+  // Verify resolved path stays within vault
+  const resolvedVault = resolve(vaultPath)
+  const resolvedFile = resolve(filePath)
+  if (!resolvedFile.startsWith(resolvedVault + '/')) {
     return c.json({ error: 'invalid filename' }, 400)
   }
 
@@ -64,7 +86,7 @@ filesRoutes.get('/:filename', (c) => {
     return c.json({ error: 'not found' }, 404)
   }
 
-  // Resolve symlinks and verify file is still within vault
+  // Resolve symlinks and re-verify
   let realFilePath: string
   let realVaultPath: string
   try {
@@ -73,20 +95,18 @@ filesRoutes.get('/:filename', (c) => {
   } catch {
     return c.json({ error: 'not found' }, 404)
   }
-  if (!realFilePath.startsWith(realVaultPath + '/') && realFilePath !== realVaultPath) {
+  if (!realFilePath.startsWith(realVaultPath + '/')) {
     return c.json({ error: 'invalid filename' }, 400)
   }
 
   const stat = statSync(filePath)
   const etag = `"${stat.mtimeMs}"`
   const ifNoneMatch = c.req.header('If-None-Match')
-
   if (ifNoneMatch === etag) {
     return new Response(null, { status: 304 })
   }
 
   const content = readFileSync(filePath, 'utf8')
-
   return new Response(content, {
     headers: {
       'Content-Type': 'text/markdown; charset=utf-8',
