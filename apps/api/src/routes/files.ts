@@ -36,7 +36,12 @@ function buildTree(dirPath: string, vaultPath: string): TreeNode[] {
         dirs.push({ type: 'dir', name: entry.name, path: relPath, children })
       }
     } else if (entry.isFile() && entry.name.endsWith('.md')) {
-      const stat = statSync(fullPath)
+      let stat
+      try {
+        stat = statSync(fullPath)
+      } catch {
+        continue
+      }
       files.push({
         type: 'file',
         name: entry.name.replace(/\.md$/, ''),
