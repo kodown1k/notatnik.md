@@ -1,10 +1,13 @@
 // packages/shared/types.ts
 
-export interface FileInfo {
-  name: string      // without .md extension, for display
-  filename: string  // with .md extension, used in API paths
-  mtime: number     // ms timestamp
-  size: number      // bytes
+export interface TreeNode {
+  type: 'file' | 'dir'
+  name: string           // display name (without .md for files)
+  path: string           // relative path from vault root, e.g. "docs/notes.md" or "docs"
+  filename?: string      // only for type=file: with .md extension
+  mtime?: number         // only for type=file
+  size?: number          // only for type=file
+  children?: TreeNode[]  // only for type=dir, sorted: dirs first, then files alphabetically
 }
 
 export interface VaultConfig {
@@ -27,37 +30,37 @@ export interface Progress {
 
 export interface MdItem {
   type: 'task' | 'text' | 'table' | 'code'
-  text?: string       // raw text for type=text|task
-  checked?: boolean   // only for type=task
-  hash?: number       // djb2 hash of text, for localStorage keying
-  rows?: string[][]   // only for type=table: [row][col]
-  lang?: string       // only for type=code: language identifier (e.g. "sql", "ts")
-  code?: string       // only for type=code: raw code content
+  text?: string
+  checked?: boolean
+  hash?: number
+  rows?: string[][]
+  lang?: string
+  code?: string
 }
 
 export interface MdSubsection {
-  title: string       // #### heading text
+  title: string
   progress: Progress
   items: MdItem[]
 }
 
 export interface MdSection {
-  title: string       // ### heading text
+  title: string
   progress: Progress
   subsections: MdSubsection[]
-  items: MdItem[]     // items before first #### subsection
+  items: MdItem[]
 }
 
 export interface MdChapter {
-  title: string       // ## heading text
+  title: string
   progress: Progress
   sections: MdSection[]
-  items: MdItem[]     // items before first ### section
+  items: MdItem[]
 }
 
 export interface MdDocument {
-  title: string       // # heading text, or filename if missing
+  title: string
   progress: Progress
   chapters: MdChapter[]
-  items: MdItem[]     // items before first ## chapter
+  items: MdItem[]
 }
