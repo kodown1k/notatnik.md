@@ -42,7 +42,7 @@ const error = ref('')
 let lastEtag = ''
 
 const currentFilename = computed(() => {
-  const p = route.params.filename
+  const p = route.params.path
   const name = Array.isArray(p) ? p[0] : p ?? ''
   return name.endsWith('.md') ? name : `${name}.md`
 })
