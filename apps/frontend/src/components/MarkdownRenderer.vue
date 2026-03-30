@@ -1,6 +1,6 @@
 <!-- apps/frontend/src/components/MarkdownRenderer.vue -->
 <template>
-  <div class="md-root">
+  <div class="md-root" @click="handleAnchorClick">
     <!-- Document-level items (before first ##) -->
     <div v-if="doc.items.length" class="md-items">
       <template v-for="item in doc.items" :key="itemKey(item)">
@@ -35,7 +35,7 @@
     <section v-for="chapter in doc.chapters" :key="chapter.title" class="section-card">
       <!-- Sticky chapter header — padding-top covers inter-card gap with blur -->
       <div class="section-header">
-        <h2>{{ chapter.title }}</h2>
+        <h2 :id="slugify(chapter.title)">{{ chapter.title }}</h2>
         <ProgressBar :total="chapter.progress.total" :checked="chapter.progress.checked"
           level="chapter" />
       </div>
@@ -49,7 +49,7 @@
 
           <!-- Sticky section header -->
           <div class="subsection-header">
-            <h3>{{ section.title }}</h3>
+            <h3 :id="slugify(section.title)">{{ section.title }}</h3>
             <ProgressBar v-if="section.progress.total > 0"
               :total="section.progress.total" :checked="section.progress.checked"
               level="section" />
@@ -63,7 +63,7 @@
 
               <!-- Sticky subsection header -->
               <div class="subsubsection-header">
-                <h4>{{ sub.title }}</h4>
+                <h4 :id="slugify(sub.title)">{{ sub.title }}</h4>
                 <ProgressBar v-if="sub.progress.total > 0"
                   :total="sub.progress.total" :checked="sub.progress.checked"
                   level="subsection" />
@@ -87,6 +87,14 @@ import { mdInline } from '../parser'
 import ProgressBar from './ProgressBar.vue'
 import type { MdDocument, MdItem } from '@notatnik/shared'
 
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
 const props = defineProps<{
   doc: MdDocument
   filename: string
@@ -96,6 +104,16 @@ const emit = defineEmits<{ toggle: [item: MdItem] }>()
 
 function itemKey(item: MdItem) {
   return item.hash ?? item.text ?? Math.random()
+}
+
+function handleAnchorClick(e: MouseEvent) {
+  const target = (e.target as HTMLElement).closest('a')
+  if (!target) return
+  const href = target.getAttribute('href')
+  if (!href?.startsWith('#')) return
+  e.preventDefault()
+  const el = document.getElementById(href.slice(1))
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 </script>
 
