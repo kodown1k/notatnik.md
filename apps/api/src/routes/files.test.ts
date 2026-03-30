@@ -87,4 +87,9 @@ describe('files routes', () => {
     const res = await client.api.files[':filename'].$get({ param: { filename: '../etc/passwd' } })
     expect(res.status).not.toBe(200)
   })
+
+  test('GET /api/files/subdir/../../etc/passwd is rejected (multi-level traversal)', async () => {
+    const appRes = await app.request('/api/files/subdir/../../etc/passwd')
+    expect(appRes.status).not.toBe(200)
+  })
 })
