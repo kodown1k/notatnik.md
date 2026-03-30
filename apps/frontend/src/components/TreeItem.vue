@@ -8,7 +8,7 @@
     </div>
     <ul v-if="node.type === 'dir' && open" class="subtree">
       <TreeItem
-        v-for="child in node.children"
+        v-for="child in node.children ?? []"
         :key="child.path"
         :node="child"
         :current-path="currentPath"
@@ -90,6 +90,7 @@ function toggle() {
 }
 
 .dir-name {
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -117,6 +118,7 @@ function toggle() {
 }
 
 .file-name {
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
