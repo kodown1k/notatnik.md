@@ -104,10 +104,33 @@ function saveProgress(item: MdItem) {
   } catch { /* ignore */ }
 }
 
-function handleToggle(item: MdItem) {
-  item.checked = !item.checked
+async function handleToggle(item: MdItem) {
+  const newChecked = !item.checked
+  item.checked = newChecked
   saveProgress(item)
   if (doc.value) recomputeProgress(doc.value)
+
+  // Persist to file
+  try {
+    const res = await fetch(`/api/files/${currentFilename.value}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: item.text, checked: newChecked }),
+    })
+    if (res.ok) {
+      // Update rawText so SSE-triggered fetchAndDiff won't show a diff for our own change
+      const freshRes = await fetch(`/api/files/${currentFilename.value}`)
+      if (freshRes.ok) {
+        rawText.value = await freshRes.text()
+        lastEtag = freshRes.headers.get('ETag') ?? ''
+      }
+    }
+  } catch {
+    // Revert on failure
+    item.checked = !newChecked
+    saveProgress(item)
+    if (doc.value) recomputeProgress(doc.value)
+  }
 }
 
 async function loadFile(silent = false) {

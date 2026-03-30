@@ -1,6 +1,6 @@
 // apps/api/src/routes/files.ts
 import { Hono } from 'hono'
-import { readdirSync, readFileSync, statSync, existsSync, realpathSync } from 'fs'
+import { readdirSync, readFileSync, writeFileSync, statSync, existsSync, realpathSync } from 'fs'
 import { join, resolve, relative } from 'path'
 import { getVaultPath } from './vault'
 import type { TreeNode } from '@notatnik/shared'
@@ -67,40 +67,35 @@ filesRoutes.get('/', (c) => {
   return c.json(buildTree(vaultPath, vaultPath))
 })
 
-filesRoutes.get('/*', (c) => {
+// Resolve and validate a file path within the vault. Returns filePath or error response.
+function resolveFilePath(c: any): string | Response {
   const vaultPath = getVaultPath()
-  if (!vaultPath) {
-    return c.json({ error: 'vault not configured' }, 503)
-  }
+  if (!vaultPath) return c.json({ error: 'vault not configured' }, 503)
 
-  // Extract relative path: strip the route mount prefix (e.g. /api/files/)
   const routePrefix = c.req.routePath.replace('/*', '')
   const relPath = c.req.path.slice(routePrefix.length + 1)
-  if (!relPath) {
-    return c.json({ error: 'invalid filename' }, 400)
-  }
+  if (!relPath) return c.json({ error: 'invalid filename' }, 400)
 
   const filePath = join(vaultPath, relPath.endsWith('.md') ? relPath : `${relPath}.md`)
-
-  // Verify resolved path stays within vault
   const resolvedVault = resolve(vaultPath)
   const resolvedFile = resolve(filePath)
-  if (!resolvedFile.startsWith(resolvedVault + '/')) {
-    return c.json({ error: 'invalid filename' }, 400)
-  }
+  if (!resolvedFile.startsWith(resolvedVault + '/')) return c.json({ error: 'invalid filename' }, 400)
 
-  // Resolve symlinks and re-verify (also catches ENOENT, ELOOP, etc.)
-  let realFilePath: string
-  let realVaultPath: string
   try {
-    realFilePath = realpathSync(filePath)
-    realVaultPath = realpathSync(vaultPath)
+    const realFilePath = realpathSync(filePath)
+    const realVaultPath = realpathSync(vaultPath)
+    if (!realFilePath.startsWith(realVaultPath + '/')) return c.json({ error: 'invalid filename' }, 400)
   } catch {
     return c.json({ error: 'not found' }, 404)
   }
-  if (!realFilePath.startsWith(realVaultPath + '/')) {
-    return c.json({ error: 'invalid filename' }, 400)
-  }
+
+  return filePath
+}
+
+filesRoutes.get('/*', (c) => {
+  const result = resolveFilePath(c)
+  if (result instanceof Response) return result
+  const filePath = result
 
   let stat
   try {
@@ -123,4 +118,51 @@ filesRoutes.get('/*', (c) => {
       'Cache-Control': 'no-cache',
     },
   })
+})
+
+// Toggle a task checkbox in a markdown file
+const TASK_PATTERNS = [
+  { re: /^- \[x\] /i,   checked: true },
+  { re: /^- ✅ /,        checked: true },
+  { re: /^- \[ \] /,     checked: false },
+  { re: /^- (⏳|❌|🔜) /, checked: false },
+]
+
+filesRoutes.patch('/*', async (c) => {
+  const result = resolveFilePath(c)
+  if (result instanceof Response) return result
+  const filePath = result
+
+  const body = await c.req.json<{ text: string; checked: boolean }>()
+  if (!body?.text) return c.json({ error: 'text is required' }, 400)
+
+  let content: string
+  try {
+    content = readFileSync(filePath, 'utf8')
+  } catch {
+    return c.json({ error: 'not found' }, 404)
+  }
+
+  const lines = content.split('\n')
+  let found = false
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    for (const pat of TASK_PATTERNS) {
+      if (pat.re.test(line)) {
+        const text = line.replace(pat.re, '').trim()
+        if (text === body.text) {
+          lines[i] = body.checked ? `- [x] ${text}` : `- [ ] ${text}`
+          found = true
+          break
+        }
+      }
+    }
+    if (found) break
+  }
+
+  if (!found) return c.json({ error: 'task not found' }, 404)
+
+  writeFileSync(filePath, lines.join('\n'))
+  return c.json({ ok: true })
 })
