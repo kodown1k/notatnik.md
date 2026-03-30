@@ -1,5 +1,6 @@
 // apps/api/src/watcher.ts
 import chokidar, { FSWatcher } from 'chokidar'
+import { relative } from 'path'
 import type { SseEvent } from '@notatnik/shared'
 
 type SseListener = (event: SseEvent) => void
@@ -29,27 +30,27 @@ export function startWatcher(vaultPath: string) {
 
   watcher = chokidar.watch(vaultPath, {
     ignoreInitial: true,
-    depth: 0,
+    depth: undefined,
     usePolling: true,
     interval: 800,
   })
 
   watcher.on('change', (filePath) => {
-    const filename = filePath.split('/').pop() ?? ''
+    const filename = relative(vaultPath, filePath)
     if (filename.endsWith('.md')) {
       broadcast({ type: 'file:changed', filename })
     }
   })
 
   watcher.on('add', (filePath) => {
-    const filename = filePath.split('/').pop() ?? ''
+    const filename = relative(vaultPath, filePath)
     if (filename.endsWith('.md')) {
       broadcast({ type: 'file:added', filename })
     }
   })
 
   watcher.on('unlink', (filePath) => {
-    const filename = filePath.split('/').pop() ?? ''
+    const filename = relative(vaultPath, filePath)
     if (filename.endsWith('.md')) {
       broadcast({ type: 'file:removed', filename })
     }
