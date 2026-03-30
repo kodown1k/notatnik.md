@@ -11,6 +11,30 @@
       />
     </div>
 
+    <!-- Diff panel: shown when an external change is detected -->
+    <div v-if="diffLines.length > 0" class="diff-panel">
+      <div class="diff-header">
+        <span class="diff-title">⚡ Plik zaktualizowany</span>
+        <div class="diff-actions">
+          <button class="diff-btn diff-btn-dismiss" @click="dismissDiff">Zamknij</button>
+          <button class="diff-btn diff-btn-accept" @click="acceptDiff">Zaakceptuj zmiany</button>
+        </div>
+      </div>
+      <div class="diff-body">
+        <template v-for="(line, idx) in diffLines" :key="idx">
+          <div v-if="line.type === 'sep'" class="diff-sep">···</div>
+          <div
+            v-else
+            class="diff-line"
+            :class="`diff-line--${line.type}`"
+          >
+            <span class="diff-prefix">{{ line.type === 'add' ? '+' : line.type === 'remove' ? '-' : ' ' }}</span>
+            <span class="diff-text">{{ line.text }}</span>
+          </div>
+        </template>
+      </div>
+    </div>
+
     <div v-if="loading" class="loading">Ładowanie...</div>
     <div v-else-if="error" class="error">{{ error }}</div>
     <MarkdownRenderer
@@ -233,4 +257,104 @@ function walkTasks(d: MdDocument, fn: (item: MdItem) => void) {
 }
 
 .error { color: #ef4444; }
+
+.diff-panel {
+  position: sticky;
+  top: 0;
+  z-index: 16;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  overflow: hidden;
+  background: var(--bg-elevated);
+}
+
+.diff-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+
+.diff-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.diff-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.diff-btn {
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: background var(--transition), color var(--transition);
+}
+
+.diff-btn-dismiss {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.diff-btn-dismiss:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.diff-btn-accept {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.diff-btn-accept:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.diff-body {
+  max-height: 40vh;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.diff-line {
+  display: flex;
+  gap: 8px;
+  padding: 1px 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.diff-line--add    { background: rgba(34, 197, 94, 0.12); color: #4ade80; }
+.diff-line--remove { background: rgba(239, 68,  68, 0.12); color: #f87171; }
+.diff-line--context { color: var(--text-secondary); }
+
+.diff-prefix {
+  flex-shrink: 0;
+  width: 12px;
+  user-select: none;
+}
+
+.diff-sep {
+  text-align: center;
+  padding: 2px 0;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-primary);
+}
 </style>
