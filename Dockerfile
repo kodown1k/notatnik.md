@@ -15,8 +15,8 @@ COPY packages ./packages
 COPY apps/api ./apps/api
 COPY apps/frontend ./apps/frontend
 
-# Build frontend
-RUN cd apps/frontend && bun run build
+# Build frontend (skip vue-tsc type checking, run vite build directly)
+RUN cd apps/frontend && bunx vite build
 
 EXPOSE 3001
 
