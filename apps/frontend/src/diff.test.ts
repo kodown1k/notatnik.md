@@ -31,10 +31,12 @@ describe('computeDiff', () => {
     expect(result.some(l => l.type === 'add')).toBe(false)
   })
 
-  test('changed line shows as remove then add', () => {
+  test('changed line shows as remove then add (correct order)', () => {
     const result = computeDiff('line1\nold\nline2', 'line1\nnew\nline2')
-    expect(result.some(l => l.type === 'remove' && 'text' in l && l.text === 'old')).toBe(true)
-    expect(result.some(l => l.type === 'add' && 'text' in l && l.text === 'new')).toBe(true)
+    const removeIdx = result.findIndex(l => l.type === 'remove' && 'text' in l && l.text === 'old')
+    const addIdx = result.findIndex(l => l.type === 'add' && 'text' in l && l.text === 'new')
+    expect(removeIdx).toBeGreaterThanOrEqual(0)
+    expect(addIdx).toBeGreaterThan(removeIdx)
   })
 
   test('context lines appear around changes', () => {
@@ -61,5 +63,9 @@ describe('computeDiff', () => {
     modified[5] = 'changedB'
     const result = computeDiff(lines.join('\n'), modified.join('\n'))
     expect(result.some(l => l.type === 'sep')).toBe(false)
+  })
+
+  test('trailing newline does not produce phantom empty-line diff', () => {
+    expect(computeDiff('line1\nline2\n', 'line1\nline2\n')).toEqual([])
   })
 })

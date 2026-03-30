@@ -7,11 +7,16 @@ export type DiffLine =
   | { type: 'sep' }
 
 export function computeDiff(oldText: string, newText: string, context = 3): DiffLine[] {
-  const oldLines = oldText === '' ? [] : oldText.split('\n')
-  const newLines = newText === '' ? [] : newText.split('\n')
+  const oldLines = oldText ? oldText.replace(/\n$/, '').split('\n') : []
+  const newLines = newText ? newText.replace(/\n$/, '').split('\n') : []
 
   const m = oldLines.length
   const n = newLines.length
+
+  const MAX_LINES = 5_000
+  if (m > MAX_LINES || n > MAX_LINES) {
+    return [{ type: 'sep' }]
+  }
 
   // Build LCS dp table
   const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0))
