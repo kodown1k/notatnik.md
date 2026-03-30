@@ -2,19 +2,19 @@
 <template>
   <nav class="sidebar">
     <ul class="file-list">
-      <li v-if="!vaultStore.files.length" class="no-files">
+      <li v-if="!flatFiles.length" class="no-files">
         Brak plików .md w vaultcie
       </li>
       <li
-        v-for="file in vaultStore.files"
-        :key="file.filename"
+        v-for="file in flatFiles"
+        :key="file.path"
         class="file-item"
-        :class="{ active: currentFilename === file.filename }"
-        @click="openFile(file.filename)"
+        :class="{ active: currentPath === file.path }"
+        @click="openFile(file.path)"
       >
-        <span class="file-name">{{ file.name }}</span>
+        <span class="file-name">{{ file.path }}</span>
         <span
-          v-if="vaultStore.changedFiles.has(file.filename) && currentFilename !== file.filename"
+          v-if="vaultStore.changedFiles.has(file.path) && currentPath !== file.path"
           class="change-dot"
           title="Plik zmieniony"
         />
@@ -27,20 +27,32 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useVaultStore } from '../stores/vault'
+import type { TreeNode } from '@notatnik/shared'
 
 const vaultStore = useVaultStore()
 const router = useRouter()
 const route = useRoute()
 
-const currentFilename = computed(() => {
-  const p = route.params.filename
+const currentPath = computed(() => {
+  const p = route.params.path
   const name = Array.isArray(p) ? p[0] : p ?? ''
   return name.endsWith('.md') ? name : `${name}.md`
 })
 
-function openFile(filename: string) {
-  vaultStore.clearChanged(filename)
-  router.push(`/${filename}`)
+function flattenTree(nodes: TreeNode[]): TreeNode[] {
+  const result: TreeNode[] = []
+  for (const node of nodes) {
+    if (node.type === 'file') result.push(node)
+    else if (node.children) result.push(...flattenTree(node.children))
+  }
+  return result
+}
+
+const flatFiles = computed(() => flattenTree(vaultStore.tree))
+
+function openFile(path: string) {
+  vaultStore.clearChanged(path)
+  router.push(`/${path}`)
 }
 </script>
 

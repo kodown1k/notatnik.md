@@ -57,9 +57,8 @@ async function openVault() {
     await vaultStore.setVault(path)
     history.value = vaultStore.getHistory()
     // Navigate to first file if available
-    if (vaultStore.files.length > 0) {
-      router.push(`/${vaultStore.files[0].filename}`)
-    }
+    const first = vaultStore.firstFile()
+    if (first) router.push(`/${first.path}`)
   } catch (e: any) {
     errorMsg.value = e.message ?? 'Nie udało się otworzyć katalogu'
   } finally {
