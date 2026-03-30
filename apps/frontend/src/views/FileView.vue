@@ -17,7 +17,7 @@
         <span class="diff-title">⚡ Plik zaktualizowany</span>
         <div class="diff-actions">
           <button class="diff-btn diff-btn-dismiss" @click="dismissDiff">Zamknij</button>
-          <button class="diff-btn diff-btn-accept" @click="acceptDiff">Zaakceptuj zmiany</button>
+          <button class="diff-btn diff-btn-accept" @click="acceptDiff">Zaakceptuj</button>
         </div>
       </div>
       <div class="diff-body">
@@ -65,6 +65,8 @@ const doc = ref<MdDocument | null>(null)
 const loading = ref(false)
 const error = ref('')
 let lastEtag = ''
+let pendingEtag = ''
+let diffInFlight = false
 const rawText = ref('')
 const pendingText = ref<string | null>(null)
 const diffLines = ref<DiffLine[]>([])
@@ -133,6 +135,8 @@ async function loadFile(silent = false) {
 }
 
 async function fetchAndDiff() {
+  if (diffInFlight) return
+  diffInFlight = true
   try {
     const res = await fetch(`/api/files/${currentFilename.value}`, {
       headers: lastEtag ? { 'If-None-Match': lastEtag } : {},
@@ -140,22 +144,26 @@ async function fetchAndDiff() {
     if (res.status === 304) return
     if (!res.ok) return
 
-    lastEtag = res.headers.get('ETag') ?? ''
+    const newEtag = res.headers.get('ETag') ?? ''
     const newText = await res.text()
     const lines = computeDiff(rawText.value, newText)
 
     if (lines.length === 0) {
       // No visible changes — silent reload
+      lastEtag = newEtag
       doc.value = parse(newText, currentFilename.value)
       rawText.value = newText
       loadProgress()
       return
     }
 
+    pendingEtag = newEtag
     pendingText.value = newText
     diffLines.value = lines
   } catch {
     // Silently ignore fetch errors during background diff
+  } finally {
+    diffInFlight = false
   }
 }
 
@@ -163,12 +171,17 @@ function acceptDiff() {
   if (!pendingText.value) return
   doc.value = parse(pendingText.value, currentFilename.value)
   rawText.value = pendingText.value
+  lastEtag = pendingEtag
   loadProgress()
   pendingText.value = null
   diffLines.value = []
 }
 
 function dismissDiff() {
+  if (pendingText.value) {
+    rawText.value = pendingText.value
+    lastEtag = pendingEtag
+  }
   pendingText.value = null
   diffLines.value = []
 }
@@ -259,9 +272,6 @@ function walkTasks(d: MdDocument, fn: (item: MdItem) => void) {
 .error { color: #ef4444; }
 
 .diff-panel {
-  position: sticky;
-  top: 0;
-  z-index: 16;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   margin-bottom: 8px;

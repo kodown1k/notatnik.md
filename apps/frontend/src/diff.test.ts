@@ -68,4 +68,10 @@ describe('computeDiff', () => {
   test('trailing newline does not produce phantom empty-line diff', () => {
     expect(computeDiff('line1\nline2\n', 'line1\nline2\n')).toEqual([])
   })
+
+  test('returns [] for files exceeding MAX_LINES', () => {
+    const bigText = Array.from({ length: 5001 }, (_, i) => `line ${i}`).join('\n')
+    const result = computeDiff(bigText, bigText + '\nextra')
+    expect(result).toEqual([])
+  })
 })

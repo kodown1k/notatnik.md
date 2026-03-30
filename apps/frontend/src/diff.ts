@@ -15,7 +15,7 @@ export function computeDiff(oldText: string, newText: string, context = 3): Diff
 
   const MAX_LINES = 5_000
   if (m > MAX_LINES || n > MAX_LINES) {
-    return [{ type: 'sep' }]
+    return []
   }
 
   // Build LCS dp table
