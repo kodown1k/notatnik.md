@@ -227,9 +227,9 @@ function itemKey(item: MdItem) {
   padding: 6px 12px 8px;
 }
 
-/* ── Tasks ──────────────────────────────────── */
+/* ── Tasks (`:deep` needed — ItemList is a child component) ── */
 
-.task-label {
+:deep(.task-label) {
   display: flex;
   align-items: flex-start;
   gap: 8px;
@@ -238,9 +238,9 @@ function itemKey(item: MdItem) {
   line-height: 1.5;
 }
 
-.task-label:hover .checkbox-visual { border-color: var(--accent); }
+:deep(.task-label:hover .checkbox-visual) { border-color: var(--accent); }
 
-.checkbox-visual {
+:deep(.checkbox-visual) {
   flex-shrink: 0;
   width: 16px;
   height: 16px;
@@ -253,22 +253,22 @@ function itemKey(item: MdItem) {
   transition: border-color var(--transition), background var(--transition);
 }
 
-.checkbox-visual.checked {
+:deep(.checkbox-visual.checked) {
   background: var(--accent);
   border-color: var(--accent);
   color: #000;
 }
 
-.checkbox-visual svg { width: 10px; height: 10px; }
+:deep(.checkbox-visual svg) { width: 10px; height: 10px; }
 
-.task-done { text-decoration: line-through; opacity: 0.5; }
+:deep(.task-done) { text-decoration: line-through; opacity: 0.5; }
 
 /* ── Text / Tables ──────────────────────────── */
 
-.prd-text { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; }
+:deep(.prd-text) { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; }
 
-.prd-text :deep(.prd-table) { width: 100%; border-collapse: collapse; }
-.prd-text :deep(.prd-table th) {
+:deep(.prd-table) { width: 100%; border-collapse: collapse; }
+:deep(.prd-table th) {
   background: var(--bg-elevated);
   font-weight: 600;
   text-align: left;
@@ -276,9 +276,26 @@ function itemKey(item: MdItem) {
   font-size: 0.75rem;
   letter-spacing: 0.05em;
 }
-.prd-text :deep(.prd-table th),
-.prd-text :deep(.prd-table td) {
+:deep(.prd-table th),
+:deep(.prd-table td) {
   padding: 7px 12px;
   border: 1px solid var(--neutral-700);
+}
+
+:deep(.code-block pre) {
+  background: var(--code-bg);
+  border-radius: var(--radius);
+  padding: 12px;
+  overflow-x: auto;
+  position: relative;
+}
+
+:deep(.code-lang) {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  opacity: 0.5;
 }
 </style>
