@@ -4,7 +4,7 @@ services:
     ports:
       - "3010:3001"
     volumes:
-      - /home/perun/Code/docs:/vault:ro
+      - /home/perun/Code:/vault:ro
     environment:
       - PORT=3001
-      - VAULT_PATH=/vault
+      - VAULT_PATH=/vault/docs
