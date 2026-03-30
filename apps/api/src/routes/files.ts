@@ -72,8 +72,9 @@ filesRoutes.get('/*', (c) => {
     return c.json({ error: 'vault not configured' }, 503)
   }
 
-  // Extract relative path: remove leading "/"
-  const relPath = c.req.path.slice(1)
+  // Extract relative path: strip the route mount prefix (e.g. /api/files/)
+  const routePrefix = c.req.routePath.replace('/*', '')
+  const relPath = c.req.path.slice(routePrefix.length + 1)
   if (!relPath) {
     return c.json({ error: 'invalid filename' }, 400)
   }
