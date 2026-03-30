@@ -7,6 +7,7 @@ export const useVaultStore = defineStore('vault', () => {
   const vaultPath = ref('')
   const tree = ref<TreeNode[]>([])
   const changedFiles = reactive(new Set<string>())  // relative paths with unseen changes
+  const fileSnapshots = new Map<string, string>()   // last known content per file (for diff-on-navigate)
 
   const HISTORY_KEY = 'notatnik-vault-history'
   const MAX_HISTORY = 5
@@ -67,6 +68,14 @@ export const useVaultStore = defineStore('vault', () => {
     changedFiles.delete(filename)
   }
 
+  function saveSnapshot(filename: string, text: string) {
+    fileSnapshots.set(filename, text)
+  }
+
+  function getSnapshot(filename: string): string | null {
+    return fileSnapshots.get(filename) ?? null
+  }
+
   return {
     vaultPath,
     tree,
@@ -78,5 +87,7 @@ export const useVaultStore = defineStore('vault', () => {
     firstFile,
     markChanged,
     clearChanged,
+    saveSnapshot,
+    getSnapshot,
   }
 })

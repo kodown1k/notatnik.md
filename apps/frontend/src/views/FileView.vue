@@ -183,25 +183,66 @@ function dismissDiff() {
   diffLines.value = []
 }
 
+// Load file, but if it has a pending change and we have a snapshot, show diff instead
+async function loadFileOrDiff() {
+  const filename = currentFilename.value
+  const snapshot = vaultStore.getSnapshot(filename)
+
+  if (snapshot !== null && vaultStore.changedFiles.has(filename)) {
+    loading.value = true
+    error.value = ''
+    try {
+      const res = await fetch(`/api/files/${filename}`)
+      if (!res.ok) { error.value = 'Nie znaleziono pliku'; return }
+
+      lastEtag = res.headers.get('ETag') ?? ''
+      const newText = await res.text()
+      rawText.value = snapshot
+      doc.value = parse(snapshot, filename)
+      loadProgress()
+
+      const lines = computeDiff(snapshot, newText)
+      if (lines.length > 0) {
+        pendingText.value = newText
+        diffLines.value = lines
+      } else {
+        doc.value = parse(newText, filename)
+        rawText.value = newText
+        loadProgress()
+      }
+    } catch {
+      error.value = 'Błąd ładowania pliku'
+    } finally {
+      loading.value = false
+    }
+    return
+  }
+
+  await loadFile()
+}
+
 onMounted(() => {
-  loadFile()
+  loadFileOrDiff()
   vaultStore.clearChanged(currentFilename.value)
   sseStore.setCurrentFile(currentFilename.value, fetchAndDiff)
 })
 
 onUnmounted(() => {
+  if (rawText.value) vaultStore.saveSnapshot(currentFilename.value, rawText.value)
   sseStore.clearCurrentFile()
 })
 
-watch(currentFilename, () => {
+watch(currentFilename, (newFilename, oldFilename) => {
+  if (oldFilename && rawText.value) vaultStore.saveSnapshot(oldFilename, rawText.value)
   lastEtag = ''
   pendingEtag = ''
+  rawText.value = ''
   doc.value = null
   pendingText.value = null
   diffLines.value = []
-  loadFile()
-  vaultStore.clearChanged(currentFilename.value)
-  sseStore.setCurrentFile(currentFilename.value, fetchAndDiff)
+  loadFileOrDiff()
+  vaultStore.clearChanged(newFilename)
+  sseStore.setCurrentFile(newFilename, fetchAndDiff)
 })
 
 // --- Progress recomputation helpers ---
