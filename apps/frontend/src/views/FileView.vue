@@ -1,6 +1,27 @@
 <!-- apps/frontend/src/views/FileView.vue -->
 <template>
   <div class="file-view">
+    <!-- File toolbar -->
+    <div v-if="doc" class="file-toolbar">
+      <button class="toolbar-btn" @click="downloadFile" title="Pobierz plik .md" aria-label="Pobierz plik">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Pobierz</span>
+      </button>
+      <button class="toolbar-btn toolbar-btn--danger" @click="showDeleteConfirm = true" title="Usuń plik" aria-label="Usuń plik">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          <line x1="10" y1="11" x2="10" y2="17"/>
+          <line x1="14" y1="11" x2="14" y2="17"/>
+        </svg>
+        <span>Usuń</span>
+      </button>
+    </div>
+
     <!-- Sticky document progress -->
     <div class="doc-progress" v-if="doc && doc.progress.total > 0">
       <ProgressBar
@@ -43,12 +64,33 @@
       :filename="currentFilename"
       @toggle="handleToggle"
     />
+
+    <!-- Delete confirmation dialog -->
+    <Teleport to="body">
+      <div v-if="showDeleteConfirm" class="delete-backdrop" @click.self="showDeleteConfirm = false">
+        <div class="delete-dialog">
+          <div class="delete-dialog-header">
+            <h3>Usuń plik</h3>
+          </div>
+          <div class="delete-dialog-body">
+            <p>Czy na pewno chcesz usunąć plik <strong>{{ currentFilename }}</strong>?</p>
+            <p class="delete-warning">Ta operacja jest nieodwracalna.</p>
+          </div>
+          <div class="delete-dialog-footer">
+            <button class="delete-dialog-btn delete-dialog-btn--cancel" @click="showDeleteConfirm = false">Anuluj</button>
+            <button class="delete-dialog-btn delete-dialog-btn--confirm" @click="deleteFile" :disabled="deleting">
+              {{ deleting ? 'Usuwanie...' : 'Usuń' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { parse } from '../parser'
 import { useVaultStore } from '../stores/vault'
 import { useSseStore } from '../stores/sse'
@@ -58,6 +100,7 @@ import type { MdDocument, MdItem, MdChapter, MdSection, MdSubsection, Progress }
 import { computeDiff, type DiffLine } from '../diff'
 
 const route = useRoute()
+const router = useRouter()
 const vaultStore = useVaultStore()
 const sseStore = useSseStore()
 
@@ -70,6 +113,8 @@ let diffInFlight = false
 const rawText = ref('')
 const pendingText = ref<string | null>(null)
 const diffLines = ref<DiffLine[]>([])
+const showDeleteConfirm = ref(false)
+const deleting = ref(false)
 
 const currentFilename = computed(() => {
   const p = route.params.path
@@ -256,6 +301,37 @@ onUnmounted(() => {
   sseStore.clearCurrentFile()
 })
 
+function downloadFile() {
+  if (!rawText.value) return
+  const blob = new Blob([rawText.value], { type: 'text/markdown;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = currentFilename.value.split('/').pop() ?? 'plik.md'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+async function deleteFile() {
+  deleting.value = true
+  try {
+    const res = await fetch(`/api/files/${currentFilename.value}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      error.value = data.error ?? 'Nie udało się usunąć pliku'
+      return
+    }
+    showDeleteConfirm.value = false
+    router.push('/')
+  } catch {
+    error.value = 'Nie udało się usunąć pliku'
+  } finally {
+    deleting.value = false
+  }
+}
+
 function scrollToTop() {
   const el = document.querySelector('.main-content')
   if (el) el.scrollTop = 0
@@ -313,7 +389,40 @@ function walkTasks(d: MdDocument, fn: (item: MdItem) => void) {
 </script>
 
 <style scoped>
-.file-view { padding: 24px; max-width: 900px; margin: 0 auto; }
+.file-view { padding: 24px; max-width: var(--content-max-width, 900px); margin: 0 auto; }
+
+.file-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  font-family: var(--font-sans);
+  transition: color var(--transition), border-color var(--transition), background var(--transition);
+}
+
+.toolbar-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.toolbar-btn--danger:hover {
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+.toolbar-btn svg { width: 16px; height: 16px; }
 
 .doc-progress {
   position: sticky;
@@ -423,6 +532,104 @@ function walkTasks(d: MdDocument, fn: (item: MdItem) => void) {
   flex-shrink: 0;
   width: 12px;
   user-select: none;
+}
+
+.delete-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.delete-dialog {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  width: 380px;
+  max-width: 90vw;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.delete-dialog-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.delete-dialog-header h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.delete-dialog-body {
+  padding: 16px 20px;
+}
+
+.delete-dialog-body p {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.delete-dialog-body strong {
+  word-break: break-all;
+}
+
+.delete-warning {
+  margin-top: 8px !important;
+  color: var(--text-secondary) !important;
+  font-size: 0.8rem !important;
+}
+
+.delete-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+}
+
+.delete-dialog-btn {
+  font-size: 0.8rem;
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  transition: background var(--transition), color var(--transition);
+}
+
+.delete-dialog-btn--cancel {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.delete-dialog-btn--cancel:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.delete-dialog-btn--confirm {
+  background: #ef4444;
+  color: #fff;
+  border-color: #ef4444;
+  font-weight: 600;
+}
+
+.delete-dialog-btn--confirm:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+.delete-dialog-btn--confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .diff-sep {

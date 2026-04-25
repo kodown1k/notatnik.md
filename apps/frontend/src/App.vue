@@ -29,17 +29,39 @@
       </div>
       <div class="navbar-right">
         <span v-if="sseStore.connected" class="sse-dot" title="Połączono z watcherem" />
+        <button class="settings-btn" @click="showSettings = true" title="Ustawienia">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
         <ThemeToggle />
       </div>
     </header>
 
+    <SettingsPanel v-if="showSettings" @close="showSettings = false" />
+
     <!-- Body: sidebar + content -->
     <div class="app-body">
       <Sidebar v-if="vaultStore.vaultPath" :class="{ 'sidebar-collapsed': !sidebarOpen }" />
-      <main class="main-content">
+      <main class="main-content" ref="mainContentEl" @scroll="onMainScroll">
         <router-view />
       </main>
     </div>
+
+    <!-- Floating back-to-top button -->
+    <button
+      v-show="showBackToTop"
+      class="back-to-top"
+      @click="scrollToTop"
+      title="Wróć na górę"
+      aria-label="Wróć na górę dokumentu"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 19V5" />
+        <path d="M5 12l7-7 7 7" />
+      </svg>
+    </button>
   </div>
 </template>
 
@@ -50,12 +72,28 @@ import { useVaultStore } from './stores/vault'
 import { useSseStore } from './stores/sse'
 import Sidebar from './components/Sidebar.vue'
 import ThemeToggle from './components/ThemeToggle.vue'
+import SettingsPanel from './components/SettingsPanel.vue'
+import { useSettingsStore } from './stores/settings'
 
 const router = useRouter()
 const vaultStore = useVaultStore()
 const sseStore = useSseStore()
+useSettingsStore() // init settings (applies data-checked-style to DOM)
 const pathInput = ref('')
+const showSettings = ref(false)
 const sidebarOpen = ref(localStorage.getItem('notatnik-sidebar') !== 'closed')
+const mainContentEl = ref<HTMLElement | null>(null)
+const showBackToTop = ref(false)
+
+function onMainScroll() {
+  const el = mainContentEl.value
+  if (!el) return
+  showBackToTop.value = el.scrollTop > 400
+}
+
+function scrollToTop() {
+  mainContentEl.value?.scrollTo({ top: 0, behavior: 'smooth' })
+}
 
 function toggleSidebar() {
   sidebarOpen.value = !sidebarOpen.value
@@ -165,6 +203,22 @@ async function changeVault() {
   box-shadow: 0 0 6px #22c55e88;
 }
 
+.settings-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition), border-color var(--transition);
+}
+
+.settings-btn:hover { color: var(--accent); border-color: var(--accent); }
+.settings-btn svg { width: 18px; height: 18px; }
+
 .app-body {
   display: flex;
   margin-top: var(--navbar-h);
@@ -177,5 +231,40 @@ async function changeVault() {
   overflow-y: auto;
   min-width: 0;
   background: var(--bg-primary);
+}
+
+/* ── Floating back-to-top ───────────────────── */
+
+.back-to-top {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 90;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(10px) saturate(1.3);
+  transition: color var(--transition), border-color var(--transition),
+    background var(--transition), transform var(--transition);
+}
+
+.back-to-top:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.back-to-top svg { width: 18px; height: 18px; }
+
+[data-theme="light"] .back-to-top {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 </style>

@@ -3,9 +3,10 @@ import { createApp, defineComponent, h } from 'vue'
 import { createPinia } from 'pinia'
 import { router } from './router'
 import App from './App.vue'
+import MermaidDiagram from './components/MermaidDiagram.vue'
 import './style.css'
 import 'highlight.js/styles/atom-one-dark.css'
-import { mdInline } from './parser'
+import { mdInline, bqLineTag } from './parser'
 import { highlight } from './highlight'
 import type { MdItem } from '@notatnik/shared'
 
@@ -51,6 +52,9 @@ const ItemList = defineComponent({
             )
           }
           if (item.type === 'code') {
+            if (item.lang === 'mermaid') {
+              return h(MermaidDiagram, { code: item.code ?? '', key: item.code })
+            }
             const highlighted = highlight(item.code ?? '', item.lang ?? '')
             return h('div', { class: 'code-block', key: item.code }, [
               h('pre', [
@@ -58,6 +62,20 @@ const ItemList = defineComponent({
                 h('code', { class: 'hljs', innerHTML: highlighted }),
               ])
             ])
+          }
+          if (item.type === 'blockquote') {
+            return h('blockquote', { class: 'md-blockquote', key: (item.lines ?? []).join('\n') },
+              (item.lines ?? []).map((line, i) => {
+                const { tag, text } = bqLineTag(line)
+                return h(tag, { key: i, class: tag === 'div' ? undefined : `bq-${tag}`, innerHTML: mdInline(text) })
+              })
+            )
+          }
+          if (item.type === 'hr') {
+            return h('hr', { class: 'md-hr', key: `hr-${Math.random()}` })
+          }
+          if (item.type === 'anchor') {
+            return h('span', { id: item.id, class: 'md-anchor-target', key: `a-${item.id}` })
           }
           return h('div', { class: 'prd-text', key: item.text, innerHTML: mdInline(item.text ?? '') })
         })

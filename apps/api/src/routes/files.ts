@@ -1,6 +1,6 @@
 // apps/api/src/routes/files.ts
 import { Hono } from 'hono'
-import { readdirSync, readFileSync, writeFileSync, statSync, existsSync, realpathSync } from 'fs'
+import { readdirSync, readFileSync, writeFileSync, statSync, existsSync, realpathSync, unlinkSync } from 'fs'
 import { join, resolve, relative } from 'path'
 import { getVaultPath } from './vault'
 import type { TreeNode } from '@notatnik/shared'
@@ -118,6 +118,22 @@ filesRoutes.get('/*', (c) => {
       'Cache-Control': 'no-cache',
     },
   })
+})
+
+filesRoutes.delete('/*', (c) => {
+  const result = resolveFilePath(c)
+  if (result instanceof Response) return result
+  const filePath = result
+
+  try {
+    const stat = statSync(filePath)
+    if (!stat.isFile()) return c.json({ error: 'not a file' }, 400)
+  } catch {
+    return c.json({ error: 'not found' }, 404)
+  }
+
+  unlinkSync(filePath)
+  return c.json({ ok: true })
 })
 
 // Toggle a task checkbox in a markdown file

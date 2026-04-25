@@ -27,6 +27,14 @@
             </tbody>
           </table>
         </div>
+        <blockquote v-else-if="item.type === 'blockquote'" class="md-blockquote">
+          <component v-for="(line, i) in item.lines" :key="i"
+            :is="bqLineTag(line).tag"
+            :class="bqLineTag(line).tag !== 'div' ? `bq-${bqLineTag(line).tag}` : undefined"
+            v-html="mdInline(bqLineTag(line).text)" />
+        </blockquote>
+        <hr v-else-if="item.type === 'hr'" class="md-hr" />
+        <span v-else-if="item.type === 'anchor'" :id="item.id" class="md-anchor-target" />
         <div v-else class="prd-text" v-html="mdInline(item.text ?? '')" />
       </template>
     </div>
@@ -83,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import { mdInline } from '../parser'
+import { mdInline, bqLineTag } from '../parser'
 import ProgressBar from './ProgressBar.vue'
 import type { MdDocument, MdItem } from '@notatnik/shared'
 
@@ -279,7 +287,6 @@ function handleAnchorClick(e: MouseEvent) {
 
 :deep(.checkbox-visual svg) { width: 10px; height: 10px; }
 
-:deep(.task-done) { text-decoration: line-through; opacity: 0.5; }
 
 /* ── Text / Tables ──────────────────────────── */
 
@@ -315,5 +322,51 @@ function handleAnchorClick(e: MouseEvent) {
   font-size: 0.7rem;
   color: var(--text-secondary);
   opacity: 0.5;
+}
+
+/* ── Blockquotes ──────────────────────────── */
+
+:deep(.md-blockquote) {
+  border-left: 3px solid var(--accent);
+  padding: 6px 14px;
+  margin: 4px 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+[data-theme="light"] :deep(.md-blockquote) {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+:deep(.md-blockquote .bq-h1),
+:deep(.md-blockquote .bq-h2),
+:deep(.md-blockquote .bq-h3),
+:deep(.md-blockquote .bq-h4) {
+  color: var(--text-primary);
+  margin: 2px 0;
+}
+
+:deep(.md-blockquote .bq-h1) { font-size: 1.1rem; font-weight: 700; }
+:deep(.md-blockquote .bq-h2) { font-size: 1.0rem; font-weight: 700; }
+:deep(.md-blockquote .bq-h3) { font-size: 0.95rem; font-weight: 600; }
+:deep(.md-blockquote .bq-h4) { font-size: 0.9rem; font-weight: 500; }
+
+/* ── Anchor targets ───────────────────────── */
+
+:deep(.md-anchor-target) {
+  display: block;
+  height: 0;
+  scroll-margin-top: 140px;  /* clear doc-progress + sticky section header */
+}
+
+/* ── Horizontal rules ─────────────────────── */
+
+:deep(.md-hr) {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 12px 0;
 }
 </style>

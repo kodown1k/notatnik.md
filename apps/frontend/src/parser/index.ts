@@ -54,12 +54,21 @@ export function parse(markdown: string, filename: string): MdDocument {
     | { kind: 'table'; rows: string[][] }
     | { kind: 'text'; text: string }
     | { kind: 'code'; lang: string; code: string }
+    | { kind: 'blockquote'; lines: string[] }
+    | { kind: 'hr' }
 
   const nodes: RawNode[] = []
   let inCode = false
   let codeLang = ''
   let codeLines: string[] = []
   let tableBuffer: string[] = []
+  let blockquoteBuffer: string[] = []
+
+  function flushBlockquote() {
+    if (blockquoteBuffer.length === 0) return
+    nodes.push({ kind: 'blockquote', lines: blockquoteBuffer })
+    blockquoteBuffer = []
+  }
 
   function flushTable() {
     if (tableBuffer.length === 0) return
@@ -75,6 +84,7 @@ export function parse(markdown: string, filename: string): MdDocument {
   for (const line of lines) {
     if (line.startsWith('```')) {
       flushTable()
+      flushBlockquote()
       if (!inCode) {
         inCode = true
         codeLang = line.slice(3).trim()
@@ -91,10 +101,30 @@ export function parse(markdown: string, filename: string): MdDocument {
     }
 
     if (line.startsWith('|')) {
+      flushBlockquote()
       tableBuffer.push(line)
       continue
     } else {
       flushTable()
+    }
+
+    if (/^> ?/.test(line)) {
+      blockquoteBuffer.push(line.replace(/^> ?/, ''))
+      continue
+    } else {
+      flushBlockquote()
+    }
+
+    if (/^---+$/.test(line.trim()) || /^\*\*\*+$/.test(line.trim()) || /^___+$/.test(line.trim())) {
+      nodes.push({ kind: 'hr' })
+      continue
+    }
+
+    // Standalone anchor: <a id="foo"></a>
+    const anchorMatch = line.trim().match(/^<a\s+id=["']([^"']+)["']\s*>\s*<\/a>$/i)
+    if (anchorMatch) {
+      nodes.push({ kind: 'item', item: { type: 'anchor', id: anchorMatch[1] } })
+      continue
     }
 
     if (/^# /.test(line)) {
@@ -124,6 +154,7 @@ export function parse(markdown: string, filename: string): MdDocument {
     }
   }
   flushTable()
+  flushBlockquote()
 
   // Phase 2: build AST from nodes
   const docItems: MdItem[] = []
@@ -201,6 +232,10 @@ export function parse(markdown: string, filename: string): MdDocument {
       pushItem({ type: 'table', rows: node.rows })
     } else if (node.kind === 'code') {
       pushItem({ type: 'code', lang: node.lang, code: node.code })
+    } else if (node.kind === 'blockquote') {
+      pushItem({ type: 'blockquote', lines: node.lines })
+    } else if (node.kind === 'hr') {
+      pushItem({ type: 'hr' })
     } else if (node.kind === 'text') {
       pushItem({ type: 'text', text: node.text })
     }
@@ -221,6 +256,15 @@ export function parse(markdown: string, filename: string): MdDocument {
   const docProgress = makeProgress(docItems, ...chapters.map((ch) => ch.progress))
 
   return { title, progress: docProgress, chapters, items: docItems }
+}
+
+export function bqLineTag(line: string): { tag: string; text: string } {
+  const m = line.match(/^(#{1,4}) (.+)$/)
+  if (m) {
+    const level = m[1].length
+    return { tag: `h${level}`, text: m[2] }
+  }
+  return { tag: 'div', text: line }
 }
 
 export function mdInline(text: string): string {

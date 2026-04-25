@@ -91,9 +91,7 @@ function toggle() {
 
 .dir-name {
   min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: break-word;
 }
 
 .file-item {
@@ -101,11 +99,12 @@ function toggle() {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 7px 16px;
+  padding: 4px 16px;
   cursor: pointer;
   transition: background var(--transition);
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+  border-bottom: 1px solid var(--border);
 }
 
 .file-item:hover { background: var(--bg-hover); color: var(--text-primary); }
@@ -119,9 +118,7 @@ function toggle() {
 
 .file-name {
   min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: break-word;
 }
 
 .change-dot {

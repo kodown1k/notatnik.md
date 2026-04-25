@@ -135,6 +135,12 @@ pre code {
   opacity: 0.6;
 }
 
+/* Checked task styles — driven by data-checked-style on <html> */
+[data-checked-style="strikethrough"] .task-done { text-decoration: line-through; opacity: 0.5; }
+[data-checked-style="dim"] .task-done { opacity: 0.35; }
+[data-checked-style="color"] .task-done { color: var(--accent); opacity: 0.7; }
+[data-checked-style="none"] .task-done { /* no visual change */ }
+
 /* Accessibility: screen-reader only */
 .sr-only {
   position: absolute;

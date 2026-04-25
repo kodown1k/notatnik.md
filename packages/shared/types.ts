@@ -30,13 +30,15 @@ export interface Progress {
 }
 
 export interface MdItem {
-  type: 'task' | 'text' | 'table' | 'code'
+  type: 'task' | 'text' | 'table' | 'code' | 'blockquote' | 'hr' | 'anchor'
   text?: string
   checked?: boolean
   hash?: number
   rows?: string[][]
   lang?: string
   code?: string
+  lines?: string[]  // blockquote lines
+  id?: string       // anchor id (for type='anchor')
 }
 
 export interface MdSubsection {
