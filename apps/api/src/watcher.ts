@@ -31,10 +31,9 @@ export function startWatcher(vaultPath: string) {
   watcher = chokidar.watch(vaultPath, {
     ignoreInitial: true,
     depth: undefined,
-    usePolling: true,
-    interval: 800,
+    usePolling: false,
     followSymlinks: false,
-    ignored: /(^|[/\\])node_modules([/\\]|$)/,
+    ignored: /(^|[/\\])(node_modules|\.git|\.next|\.cache|\.turbo|dist|build|coverage|\.venv|venv|__pycache__|target|\.idea|\.vscode)([/\\]|$)/,
   })
 
   watcher.on('change', (filePath) => {
@@ -56,6 +55,10 @@ export function startWatcher(vaultPath: string) {
     if (filename.endsWith('.md')) {
       broadcast({ type: 'file:removed', filename })
     }
+  })
+
+  watcher.on('error', (err) => {
+    console.error('[watcher] error:', err instanceof Error ? err.message : err)
   })
 }
 

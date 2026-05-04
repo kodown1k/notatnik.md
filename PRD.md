@@ -18,7 +18,7 @@ notatnik.md to przeglądarka plików Markdown zoptymalizowana pod listy zadań i
 - **Backend:** Bun + Hono (TypeScript), port 3001
 - **Frontend:** Vue 3 + Pinia + Vue Router + Vite (TypeScript), port 5173 (dev)
 - **Monorepo:** Bun workspaces — `apps/api`, `apps/frontend`, `packages/shared`
-- **Watcher:** chokidar (rekurencyjny, głębokość nieograniczona)
+- **Watcher:** chokidar (rekurencyjny, natywne inotify na Linux, error handler na pojedynczych plikach)
 - **Komunikacja real-time:** Server-Sent Events (SSE)
 - **Testy:** bun:test (API), vitest (frontend)
 - **Docker:** single-container, Bun + zbudowany frontend, VAULT_PATH env var
@@ -219,3 +219,5 @@ Ochrona przed path traversal (`..` w ścieżce).
 - Checkboxy identyfikowane przez hash DJB2 treści — zmiana tekstu taska = nowy hash = utrata stanu
 - Pliki nie-`.md` są ignorowane przez API i watcher
 - Katalogi bez plików `.md` (bezpośrednio lub w podkatalogach) nie pojawiają się w drzewie
+- Watcher ignoruje katalogi: `node_modules`, `.git`, `.next`, `.cache`, `.turbo`, `dist`, `build`, `coverage`, `.venv`, `venv`, `__pycache__`, `target`, `.idea`, `.vscode` (nie pojawią się w drzewie ani nie zaalokują inotify watchy)
+- Błędy filesystem na pojedynczym pliku (np. zapętlone symlinki, ELOOP, EINVAL) są tylko logowane do stderr — nie zatrzymują watchera ani API
