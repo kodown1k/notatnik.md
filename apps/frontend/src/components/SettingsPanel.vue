@@ -36,6 +36,18 @@
             </span>
           </label>
         </fieldset>
+
+        <fieldset class="setting-group">
+          <legend>Motyw</legend>
+          <label v-for="opt in themeOptions" :key="opt.value" class="radio-label">
+            <input type="radio" :value="opt.value" v-model="settings.theme" />
+            <span class="radio-visual" />
+            <span class="radio-text">
+              <span class="radio-title">{{ opt.label }}</span>
+              <span class="radio-desc">{{ opt.desc }}</span>
+            </span>
+          </label>
+        </fieldset>
       </div>
     </div>
   </div>
@@ -60,6 +72,12 @@ const widthOptions = [
   { value: 'medium' as const, label: 'Średnia', desc: '1200px' },
   { value: 'wide' as const, label: 'Szeroka', desc: '1600px' },
   { value: 'full' as const, label: 'Pełna', desc: '100% ekranu' },
+]
+
+const themeOptions = [
+  { value: 'dark' as const, label: 'Ciemny', desc: 'Domyślny ciemny motyw' },
+  { value: 'light' as const, label: 'Jasny', desc: 'Jasne tło' },
+  { value: 'deep-night' as const, label: 'Deep Night', desc: 'Fioletowo-niebieski (paleta z mockupu)' },
 ]
 </script>
 

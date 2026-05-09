@@ -21,25 +21,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed } from 'vue'
+import { useSettingsStore } from '../stores/settings'
 
-const THEME_KEY = 'notatnik-theme'
-const isDark = ref(true)
-
-onMounted(() => {
-  const saved = localStorage.getItem(THEME_KEY)
-  isDark.value = saved !== 'light'
-  applyTheme()
-})
-
-function applyTheme() {
-  document.documentElement.dataset.theme = isDark.value ? 'dark' : 'light'
-  localStorage.setItem(THEME_KEY, isDark.value ? 'dark' : 'light')
-}
+const settings = useSettingsStore()
+const isDark = computed(() => settings.theme !== 'light')
 
 function toggle() {
-  isDark.value = !isDark.value
-  applyTheme()
+  settings.theme = settings.theme === 'light' ? 'dark' : 'light'
 }
 </script>
 
