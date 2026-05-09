@@ -8,7 +8,8 @@
       draggable="true"
       @click="toggle"
       @dragstart="onDragStart"
-      @dragend="onDragEnd">
+      @dragend="onDragEnd"
+      @contextmenu.prevent="openContextMenu">
       <span class="dir-arrow">{{ open ? '▾' : '▸' }}</span>
       <span class="dir-name">{{ node.name }}</span>
       <span v-if="groupColorIndicator"
@@ -36,6 +37,7 @@
       @click="$emit('open', node)"
       @dragstart="onDragStart"
       @dragend="onDragEnd"
+      @contextmenu.prevent="openContextMenu"
     >
       <span class="file-name">{{ node.name }}</span>
       <span v-if="groupColorIndicator"
@@ -49,12 +51,27 @@
       />
     </div>
   </li>
+
+  <ContextMenu
+    :visible="cmVisible"
+    :x="cmX"
+    :y="cmY"
+    :path="node.path"
+    :is-file="node.type === 'file'"
+    @close="cmVisible = false"
+    @open="$emit('open', node)"
+    @show-dialog="openDialog"
+  />
+
+  <GroupDialog v-if="dlgVisible" :path="node.path" @close="dlgVisible = false" />
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { TreeNode } from '@notatnik/shared'
 import { useGroupsStore } from '../stores/groups'
+import ContextMenu from './ContextMenu.vue'
+import GroupDialog from './GroupDialog.vue'
 
 defineOptions({ name: 'TreeItem' })
 
@@ -99,6 +116,22 @@ const groupColorIndicator = computed(() => {
   if (!groups || groups.length === 0) return null
   return { color: groups[0].color, name: groups[0].name }
 })
+
+const cmVisible = ref(false)
+const cmX = ref(0)
+const cmY = ref(0)
+const dlgVisible = ref(false)
+
+function openContextMenu(e: MouseEvent) {
+  cmX.value = e.clientX
+  cmY.value = e.clientY
+  cmVisible.value = true
+}
+
+function openDialog() {
+  cmVisible.value = false
+  dlgVisible.value = true
+}
 </script>
 
 <style scoped>
