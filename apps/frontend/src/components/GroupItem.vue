@@ -28,6 +28,8 @@ function onClick() {
   if (stale.value) return
   if (isDir.value) {
     vaultStore.revealInTree(props.item.path)
+    const file = vaultStore.firstFileInDir(props.item.path)
+    if (file) router.push(`/${file.path}`)
     return
   }
   router.push(`/${props.item.path}`)

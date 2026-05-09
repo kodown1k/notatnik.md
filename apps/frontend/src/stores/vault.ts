@@ -98,6 +98,21 @@ export const useVaultStore = defineStore('vault', () => {
     return null
   }
 
+  function firstFileInDir(dirPath: string): TreeNode | null {
+    function findDir(nodes: TreeNode[]): TreeNode | null {
+      for (const n of nodes) {
+        if (n.type === 'dir' && n.path === dirPath) return n
+        if (n.children) {
+          const found = findDir(n.children)
+          if (found) return found
+        }
+      }
+      return null
+    }
+    const dir = findDir(tree.value)
+    return dir?.children ? firstFile(dir.children) : null
+  }
+
   function markChanged(filename: string) {
     changedFiles.add(filename)
   }
@@ -128,6 +143,7 @@ export const useVaultStore = defineStore('vault', () => {
     loadVault,
     refreshFiles,
     firstFile,
+    firstFileInDir,
     markChanged,
     clearChanged,
     saveSnapshot,
