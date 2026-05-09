@@ -48,11 +48,11 @@ Separator między sekcjami to label „Pliki" (uppercase, muted).
 
 ### 3.5 Drag & drop
 
-- Implementacja: `@vueuse/core` (`useDropZone` na obszarze grupy, `draggable="true"` + handlery na `TreeItem`).
-- Źródło: `TreeItem` (plik lub katalog) — ustawiamy `draggable="true"`, na `dragstart` przekazujemy `node.path` przez `dataTransfer`.
-- Cel: każda sekcja grupy i placeholder drop-zone pod listą grup.
-- Po upuszczeniu: wywołanie API `POST /api/groups/:id/items`, aktualizacja store.
-- Wizualne feedback podczas drag: highlight obramowania drop-zone.
+- Implementacja: **natywny HTML5 DnD** (bez dodatkowych zależności). `@vueuse/core` odpada — `useDropZone` jest zoptymalizowany pod dropa plików z OS, nie pod wewnętrzny DnD między elementami drzewa.
+- Źródło: `TreeItem` — `draggable="true"` na `.dir-item` i `.file-item`, na `dragstart` ustawiamy reaktywną zmienną `groupsStore.draggingPath = node.path`.
+- Cel: każdy nagłówek grupy i placeholder drop-zone nasłuchuje na `dragover` (prevent default) i `drop` — odczytuje `groupsStore.draggingPath`, wywołuje API `POST /api/groups/:id/items`.
+- Po upuszczeniu: aktualizacja store, reset `draggingPath = null`.
+- Feedback podczas drag: klasa CSS `drag-over` na aktywnej drop-zone (highlight obramowania).
 
 ### 3.6 Paleta kolorów
 
@@ -93,8 +93,8 @@ Otwierany z menu kontekstowego → „Pokaż wszystkie grupy…".
 
 - Modal na środku ekranu, overlay tłumi tło.
 - Nagłówek: „Wybierz grupę", podtytuł: „Dodajesz: `<nazwa pliku>`".
-- Lista wszystkich grup: każda jako klikalny wiersz z kolorowym kwadracikiem i nazwą. Kliknięcie zaznacza (border + checkmark). Można zaznaczyć tylko jedną.
-- Przyciski: „Anuluj" (zamknij bez akcji) i „Dodaj" (zapisz i zamknij).
+- Lista wszystkich grup: każda jako klikalny wiersz z kolorowym kwadracikiem i nazwą. Grupy, do których plik już należy, mają checkmark i są wstępnie zaznaczone. Kliknięcie toggleuje zaznaczenie (dodaj / usuń).
+- Przyciski: „Anuluj" (zamknij bez akcji) i „Zapisz" (zatwierdź zmiany i zamknij).
 - Zamknięcie: Escape lub kliknięcie overlay.
 
 ---
@@ -114,14 +114,13 @@ Bun ma wbudowane SQLite (`bun:sqlite`) — zero nowych zależności npm.
 ### Schema
 
 ```sql
-CREATE TABLE groups (
+CREATE TABLE IF NOT EXISTS groups (
   id    INTEGER PRIMARY KEY AUTOINCREMENT,
   name  TEXT NOT NULL,
-  color TEXT NOT NULL,
-  position INTEGER NOT NULL DEFAULT 0
+  color TEXT NOT NULL
 );
 
-CREATE TABLE group_items (
+CREATE TABLE IF NOT EXISTS group_items (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
   group_id  INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
   path      TEXT NOT NULL,
@@ -130,7 +129,11 @@ CREATE TABLE group_items (
 );
 ```
 
+Kolumna `position` (sortowanie grup drag & drop) jest poza tym sprintem — nie ma jej w schemacie sprint 1. Kolejność wyświetlania: `ORDER BY id ASC`.
+
 Plik bazy danych: `groups.db` w tym samym katalogu co `settings.json` (korzeń repo, obok `apps/`).
+
+**Inicjalizacja:** nowy plik `apps/api/src/db/groups.ts` wykonuje `CREATE TABLE IF NOT EXISTS` przy starcie serwera (importowany w `index.ts` przed montowaniem routes). Bun SQLite automatycznie tworzy plik `.db` przy pierwszym otwarciu. WAL mode: `PRAGMA journal_mode=WAL` — lepsza wydajność przy równoczesnych odczytach SSE.
 
 ### API routes — `GET/POST /api/groups`
 
@@ -140,10 +143,13 @@ Plik bazy danych: `groups.db` w tym samym katalogu co `settings.json` (korzeń r
 | POST | `/api/groups` | Utwórz grupę `{name, color}` |
 | PATCH | `/api/groups/:id` | Zmień nazwę / kolor |
 | DELETE | `/api/groups/:id` | Usuń grupę (cascade) |
-| POST | `/api/groups/:id/items` | Dodaj element `{path}` |
+| POST | `/api/groups/:id/items` | Dodaj element `{path}` — jeśli istnieje (UNIQUE), zwraca 200 bez błędu (upsert ignoruje duplikat) |
 | DELETE | `/api/groups/:id/items/:itemId` | Usuń element z grupy (po `group_items.id`) |
+| DELETE | `/api/groups/items/by-path` | Usuń `{path}` ze wszystkich grup jednym zapytaniem (`DELETE FROM group_items WHERE path = ?`) |
 
 ### Odpowiedź GET /api/groups
+
+Zwraca `[]` gdy vault nie jest skonfigurowany (brak błędu — grupy są globalne, niezależne od vaultu).
 
 ```json
 [
@@ -151,7 +157,6 @@ Plik bazy danych: `groups.db` w tym samym katalogu co `settings.json` (korzeń r
     "id": 1,
     "name": "Projekt Alpha",
     "color": "#c084fc",
-    "position": 0,
     "items": [
       { "id": 1, "path": "projekty/alpha", "added_at": 1715000000 },
       { "id": 2, "path": "PRD.md", "added_at": 1715000010 }
@@ -159,6 +164,10 @@ Plik bazy danych: `groups.db` w tym samym katalogu co `settings.json` (korzeń r
   }
 ]
 ```
+
+### Grupy a zmiana vaultu
+
+Grupy są **globalne** — nie powiązane z konkretnym vaultem. `path` w `group_items` to ścieżka względem aktualnego vaultu. Po zmianie vaultu elementy, których ścieżek nie ma w nowym drzewie, są wyświetlane w kolorze muted z ikoną ⚠️ i nie są klikalne. Użytkownik może je ręcznie usunąć z grupy. Baza danych nie jest czyszczona automatycznie przy zmianie vaultu.
 
 ---
 
@@ -189,8 +198,8 @@ Computed: `groupsByPath` — mapa `path → Group[]` używana przez `TreeItem` d
 | `GroupsSection.vue` | Nowy — lista grup, + button, drop-zone |
 | `GroupItem.vue` | Nowy — pojedynczy element grupy w liście |
 | `GroupDialog.vue` | Nowy — modal wyboru grupy |
-| `ContextMenu.vue` | Nowy — PPM menu (używany przez TreeItem) |
-| `TreeItem.vue` | Dodać `draggable`, wskaźnik koloru, obsługę PPM |
+| `ContextMenu.vue` | Nowy — PPM menu renderowany przez `<Teleport to="body">` wewnątrz `TreeItem`, pozycjonowany absolutnie przy kursorze. Eliminuje potrzebę bąbelkowania `contextmenu` przez zagnieżdżone drzewo. |
+| `TreeItem.vue` | Dodać `draggable="true"` + `@dragstart`, wskaźnik koloru (kwadracik), `@contextmenu.prevent` montujący `ContextMenu` |
 
 ---
 
@@ -204,7 +213,8 @@ Computed: `groupsByPath` — mapa `path → Group[]` używana przez `TreeItem` d
 
 ## 10. Zakres poza tym sprintem
 
-- Drag & drop do zmiany kolejności grup (sortowanie).
+- Drag & drop do zmiany kolejności grup (sortowanie) — kolumna `position` w tabeli `groups`.
 - Kilka kwadracików gdy plik należy do wielu grup.
 - Synchronizacja grup między przeglądarkami przez SSE.
 - Wyszukiwanie w grupach.
+- Grupy per-vault (kolumna `vault_path` w tabeli `groups`).
