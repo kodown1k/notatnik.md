@@ -43,6 +43,42 @@ groupsRoutes.patch('/:id', async (c) => {
   return c.json({ id, name: newName, color: newColor })
 })
 
+groupsRoutes.post('/:id/items', async (c) => {
+  const groupId = Number(c.req.param('id'))
+  if (!Number.isFinite(groupId)) return c.json({ error: 'invalid id' }, 400)
+
+  const body = await c.req.json<{ path?: string }>().catch(() => ({}))
+  const path = body.path?.trim()
+  if (!path) return c.json({ error: 'path is required' }, 400)
+
+  const group = groupsDb.query('SELECT id FROM groups WHERE id = ?').get(groupId)
+  if (!group) return c.json({ error: 'group not found' }, 404)
+
+  const existing = groupsDb.query('SELECT id, group_id, path, added_at FROM group_items WHERE group_id = ? AND path = ?').get(groupId, path) as { id: number; group_id: number; path: string; added_at: number } | null
+  if (existing) {
+    return c.json({ id: existing.id, path: existing.path, added_at: existing.added_at }, 200)
+  }
+
+  const inserted = groupsDb.query('INSERT INTO group_items (group_id, path) VALUES (?, ?) RETURNING id, added_at').get(groupId, path) as { id: number; added_at: number }
+  return c.json({ id: inserted.id, path, added_at: inserted.added_at }, 201)
+})
+
+groupsRoutes.delete('/:id/items/:itemId', (c) => {
+  const groupId = Number(c.req.param('id'))
+  const itemId = Number(c.req.param('itemId'))
+  if (!Number.isFinite(groupId) || !Number.isFinite(itemId)) return c.json({ error: 'invalid id' }, 400)
+  const res = groupsDb.run('DELETE FROM group_items WHERE id = ? AND group_id = ?', [itemId, groupId])
+  if (res.changes === 0) return c.json({ error: 'not found' }, 404)
+  return c.body(null, 204)
+})
+
+groupsRoutes.delete('/items/by-path', (c) => {
+  const path = c.req.query('path')?.trim()
+  if (!path) return c.json({ error: 'path query param required' }, 400)
+  const res = groupsDb.run('DELETE FROM group_items WHERE path = ?', [path])
+  return c.json({ removed: res.changes })
+})
+
 groupsRoutes.delete('/:id', (c) => {
   const id = Number(c.req.param('id'))
   if (!Number.isFinite(id)) return c.json({ error: 'invalid id' }, 400)

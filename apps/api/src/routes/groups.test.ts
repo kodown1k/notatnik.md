@@ -93,3 +93,63 @@ describe('groups routes — PATCH/DELETE', () => {
     expect(res.status).toBe(404)
   })
 })
+
+describe('groups routes — items', () => {
+  beforeEach(reset)
+
+  async function makeGroup() {
+    return await (await client.api.groups.$post({ json: { name: 'G', color: '#c084fc' } })).json()
+  }
+
+  test('POST /api/groups/:id/items adds path', async () => {
+    const g = await makeGroup()
+    const res = await client.api.groups[':id'].items.$post({ param: { id: String(g.id) }, json: { path: 'PRD.md' } })
+    expect(res.status).toBe(201)
+    const item = await res.json()
+    expect(item.path).toBe('PRD.md')
+    expect(item.id).toBeGreaterThan(0)
+  })
+
+  test('POST /api/groups/:id/items duplicate is idempotent (returns existing)', async () => {
+    const g = await makeGroup()
+    const r1 = await (await client.api.groups[':id'].items.$post({ param: { id: String(g.id) }, json: { path: 'PRD.md' } })).json()
+    const r2 = await client.api.groups[':id'].items.$post({ param: { id: String(g.id) }, json: { path: 'PRD.md' } })
+    expect(r2.status).toBe(200)
+    const item = await r2.json()
+    expect(item.id).toBe(r1.id)
+  })
+
+  test('POST /api/groups/:id/items with empty path returns 400', async () => {
+    const g = await makeGroup()
+    const res = await client.api.groups[':id'].items.$post({ param: { id: String(g.id) }, json: { path: '' } })
+    expect(res.status).toBe(400)
+  })
+
+  test('POST to non-existent group returns 404', async () => {
+    const res = await client.api.groups[':id'].items.$post({ param: { id: '99999' }, json: { path: 'PRD.md' } })
+    expect(res.status).toBe(404)
+  })
+
+  test('DELETE /api/groups/:id/items/:itemId removes item', async () => {
+    const g = await makeGroup()
+    const item = await (await client.api.groups[':id'].items.$post({ param: { id: String(g.id) }, json: { path: 'PRD.md' } })).json()
+    const res = await client.api.groups[':id'].items[':itemId'].$delete({ param: { id: String(g.id), itemId: String(item.id) } })
+    expect(res.status).toBe(204)
+  })
+
+  test('DELETE /api/groups/items/by-path removes from all groups', async () => {
+    const g1 = await makeGroup()
+    const g2 = await makeGroup()
+    await client.api.groups[':id'].items.$post({ param: { id: String(g1.id) }, json: { path: 'PRD.md' } })
+    await client.api.groups[':id'].items.$post({ param: { id: String(g2.id) }, json: { path: 'PRD.md' } })
+
+    const res = await client.api.groups.items['by-path'].$delete({ query: { path: 'PRD.md' } })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.removed).toBe(2)
+
+    const list = await (await client.api.groups.$get()).json()
+    expect(list[0].items).toEqual([])
+    expect(list[1].items).toEqual([])
+  })
+})
