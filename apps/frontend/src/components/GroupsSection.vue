@@ -56,13 +56,16 @@ async function startCreate() {
 
 async function commitCreate() {
   if (suppressBlurCommit) return
+  suppressBlurCommit = true
   const name = newName.value.trim()
   if (!name) {
     creating.value = false
+    suppressBlurCommit = false
     return
   }
   await groupsStore.createGroup(name, selectedColor.value)
   creating.value = false
+  setTimeout(() => { suppressBlurCommit = false }, 0)
 }
 
 function cancelCreate() {

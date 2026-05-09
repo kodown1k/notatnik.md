@@ -104,7 +104,7 @@ function toggleSidebar() {
 
 onMounted(async () => {
   await vaultStore.loadVault()
-  await groupsStore.fetchGroups()
+  await groupsStore.fetchGroups().catch((e) => console.error('fetchGroups failed:', e))
   pathInput.value = vaultStore.vaultPath
   sseStore.connect()
 })

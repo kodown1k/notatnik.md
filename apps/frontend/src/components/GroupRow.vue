@@ -58,8 +58,12 @@ async function onDrop() {
   const path = groupsStore.draggingPath
   if (!path) return
   groupsStore.draggingPath = null
-  await groupsStore.addItem(props.group.id, path)
-  if (!open.value) toggle()
+  try {
+    await groupsStore.addItem(props.group.id, path)
+    if (!open.value) toggle()
+  } catch (e) {
+    console.error('addItem failed:', e)
+  }
 }
 </script>
 

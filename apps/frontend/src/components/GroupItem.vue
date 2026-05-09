@@ -22,18 +22,7 @@ const vaultStore = useVaultStore()
 
 const isDir = computed(() => !props.item.path.endsWith('.md'))
 
-function existsInTree(path: string): boolean {
-  function walk(nodes = vaultStore.tree): boolean {
-    for (const n of nodes) {
-      if (n.path === path) return true
-      if (n.children && walk(n.children)) return true
-    }
-    return false
-  }
-  return walk()
-}
-
-const stale = computed(() => !existsInTree(props.item.path))
+const stale = computed(() => !vaultStore.pathSet.has(props.item.path))
 
 function onClick() {
   if (stale.value) return

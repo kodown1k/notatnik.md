@@ -1,6 +1,6 @@
 // apps/frontend/src/stores/vault.ts
 import { defineStore } from 'pinia'
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import type { TreeNode } from '@notatnik/shared'
 
 export const useVaultStore = defineStore('vault', () => {
@@ -9,6 +9,18 @@ export const useVaultStore = defineStore('vault', () => {
   const tree = ref<TreeNode[]>([])
   const changedFiles = reactive(new Set<string>())  // relative paths with unseen changes
   const fileSnapshots = new Map<string, string>()   // last known content per file (for diff-on-navigate)
+
+  const pathSet = computed(() => {
+    const s = new Set<string>()
+    function walk(nodes: TreeNode[]) {
+      for (const n of nodes) {
+        s.add(n.path)
+        if (n.children) walk(n.children)
+      }
+    }
+    walk(tree.value)
+    return s
+  })
 
   const HISTORY_KEY = 'notatnik-vault-history'
   const MAX_HISTORY = 5
@@ -83,6 +95,7 @@ export const useVaultStore = defineStore('vault', () => {
     vaultReadonly,
     tree,
     changedFiles,
+    pathSet,
     getHistory,
     setVault,
     loadVault,
