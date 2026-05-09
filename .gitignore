@@ -3,3 +3,9 @@ dist/
 .vite/
 settings.json
 *.local
+
+# SQLite
+groups.db
+groups.db-journal
+groups.db-wal
+groups.db-shm
