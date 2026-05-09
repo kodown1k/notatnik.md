@@ -9,8 +9,10 @@
     <div v-if="creating" class="create-form">
       <div class="palette">
         <button v-for="c in colors" :key="c"
+                type="button"
                 class="swatch" :class="{ selected: selectedColor === c }"
                 :style="{ background: c }"
+                @mousedown.prevent
                 @click="selectedColor = c"
                 :title="c" />
       </div>
