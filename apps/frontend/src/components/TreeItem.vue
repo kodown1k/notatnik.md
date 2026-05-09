@@ -11,6 +11,10 @@
       @dragend="onDragEnd">
       <span class="dir-arrow">{{ open ? '▾' : '▸' }}</span>
       <span class="dir-name">{{ node.name }}</span>
+      <span v-if="groupColorIndicator"
+            class="group-indicator"
+            :style="{ background: groupColorIndicator.color }"
+            :title="groupColorIndicator.name" />
     </div>
     <ul v-if="node.type === 'dir' && open" class="subtree">
       <TreeItem
@@ -34,6 +38,10 @@
       @dragend="onDragEnd"
     >
       <span class="file-name">{{ node.name }}</span>
+      <span v-if="groupColorIndicator"
+            class="group-indicator"
+            :style="{ background: groupColorIndicator.color }"
+            :title="groupColorIndicator.name" />
       <span
         v-if="changedFiles.has(node.path) && currentPath !== node.path"
         class="change-dot"
@@ -44,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import type { TreeNode } from '@notatnik/shared'
 import { useGroupsStore } from '../stores/groups'
 
@@ -85,6 +93,12 @@ function onDragStart(e: DragEvent) {
 function onDragEnd() {
   groupsStore.draggingPath = null
 }
+
+const groupColorIndicator = computed(() => {
+  const groups = groupsStore.groupsByPath.get(props.node.path)
+  if (!groups || groups.length === 0) return null
+  return { color: groups[0].color, name: groups[0].name }
+})
 </script>
 
 <style scoped>
@@ -151,5 +165,18 @@ function onDragEnd() {
   border-radius: 50%;
   background: var(--accent);
   flex-shrink: 0;
+}
+
+.group-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.file-item .group-indicator + .change-dot,
+.dir-item .group-indicator + .change-dot {
+  margin-left: 4px;
 }
 </style>
