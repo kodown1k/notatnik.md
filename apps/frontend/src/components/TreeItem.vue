@@ -2,7 +2,13 @@
 <template>
   <li class="tree-node">
     <!-- Directory -->
-    <div v-if="node.type === 'dir'" class="dir-item" @click="toggle">
+    <div
+      v-if="node.type === 'dir'"
+      class="dir-item"
+      draggable="true"
+      @click="toggle"
+      @dragstart="onDragStart"
+      @dragend="onDragEnd">
       <span class="dir-arrow">{{ open ? '▾' : '▸' }}</span>
       <span class="dir-name">{{ node.name }}</span>
     </div>
@@ -21,8 +27,11 @@
     <div
       v-else-if="node.type === 'file'"
       class="file-item"
+      draggable="true"
       :class="{ active: currentPath === node.path }"
       @click="$emit('open', node)"
+      @dragstart="onDragStart"
+      @dragend="onDragEnd"
     >
       <span class="file-name">{{ node.name }}</span>
       <span
@@ -37,8 +46,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { TreeNode } from '@notatnik/shared'
+import { useGroupsStore } from '../stores/groups'
 
 defineOptions({ name: 'TreeItem' })
+
+const groupsStore = useGroupsStore()
 
 const props = defineProps<{
   node: TreeNode
@@ -60,6 +72,18 @@ const open = ref(
 function toggle() {
   open.value = !open.value
   localStorage.setItem(STORAGE_KEY, open.value ? 'open' : 'closed')
+}
+
+function onDragStart(e: DragEvent) {
+  groupsStore.draggingPath = props.node.path
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'copy'
+    e.dataTransfer.setData('text/plain', props.node.path)
+  }
+}
+
+function onDragEnd() {
+  groupsStore.draggingPath = null
 }
 </script>
 
