@@ -16,3 +16,14 @@ groupsRoutes.get('/', (c) => {
   const result: Group[] = groups.map((g) => ({ ...g, items: byGroup.get(g.id) ?? [] }))
   return c.json(result)
 })
+
+groupsRoutes.post('/', async (c) => {
+  const body = await c.req.json<{ name?: string; color?: string }>().catch(() => ({}))
+  const name = body.name?.trim()
+  const color = body.color?.trim()
+  if (!name) return c.json({ error: 'name is required' }, 400)
+  if (!color) return c.json({ error: 'color is required' }, 400)
+
+  const result = groupsDb.query('INSERT INTO groups (name, color) VALUES (?, ?) RETURNING id').get(name, color) as { id: number }
+  return c.json({ id: result.id, name, color, items: [] }, 201)
+})

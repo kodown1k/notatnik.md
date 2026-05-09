@@ -31,3 +31,27 @@ describe('groups routes — GET', () => {
     expect(body).toEqual([])
   })
 })
+
+describe('groups routes — POST', () => {
+  beforeEach(reset)
+
+  test('POST /api/groups creates new group', async () => {
+    const res = await client.api.groups.$post({ json: { name: 'Projekt Alpha', color: '#c084fc' } })
+    expect(res.status).toBe(201)
+    const body = await res.json()
+    expect(body.id).toBeGreaterThan(0)
+    expect(body.name).toBe('Projekt Alpha')
+    expect(body.color).toBe('#c084fc')
+    expect(body.items).toEqual([])
+  })
+
+  test('POST /api/groups with empty name returns 400', async () => {
+    const res = await client.api.groups.$post({ json: { name: '', color: '#c084fc' } })
+    expect(res.status).toBe(400)
+  })
+
+  test('POST /api/groups with missing color returns 400', async () => {
+    const res = await client.api.groups.$post({ json: { name: 'X' } as any })
+    expect(res.status).toBe(400)
+  })
+})
