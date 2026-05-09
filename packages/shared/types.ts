@@ -67,3 +67,31 @@ export interface MdDocument {
   chapters: MdChapter[]
   items: MdItem[]
 }
+
+// Groups feature
+
+export const GROUP_COLORS = [
+  '#c084fc', // Fiolet
+  '#34d399', // Zieleń
+  '#fb923c', // Pomarańcz
+  '#60a5fa', // Błękit
+  '#f472b6', // Róż
+  '#f87171', // Czerwień
+  '#fbbf24', // Żółć
+  '#818cf8', // Indygo
+] as const
+
+export type GroupColor = typeof GROUP_COLORS[number]
+
+export interface GroupItem {
+  id: number
+  path: string       // relative to vault root
+  added_at: number   // unix timestamp
+}
+
+export interface Group {
+  id: number
+  name: string
+  color: string      // hex like "#c084fc" — not narrowed to GroupColor (DB allows custom)
+  items: GroupItem[]
+}

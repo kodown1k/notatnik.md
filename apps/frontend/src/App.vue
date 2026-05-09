@@ -70,6 +70,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useVaultStore } from './stores/vault'
 import { useSseStore } from './stores/sse'
+import { useGroupsStore } from './stores/groups'
 import Sidebar from './components/Sidebar.vue'
 import ThemeToggle from './components/ThemeToggle.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
@@ -78,6 +79,7 @@ import { useSettingsStore } from './stores/settings'
 const router = useRouter()
 const vaultStore = useVaultStore()
 const sseStore = useSseStore()
+const groupsStore = useGroupsStore()
 useSettingsStore() // init settings (applies data-checked-style to DOM)
 const pathInput = ref('')
 const showSettings = ref(false)
@@ -102,6 +104,7 @@ function toggleSidebar() {
 
 onMounted(async () => {
   await vaultStore.loadVault()
+  await groupsStore.fetchGroups().catch((e) => console.error('fetchGroups failed:', e))
   pathInput.value = vaultStore.vaultPath
   sseStore.connect()
 })

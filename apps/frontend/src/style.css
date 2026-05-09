@@ -54,6 +54,23 @@ html, body {
   --code-bg:       #f5f3ef;
 }
 
+/* Deep Night theme */
+[data-theme="deep-night"] {
+  --bg-primary:    #0f0f23;
+  --bg-elevated:   #1e1e38;
+  --bg-sidebar:    #1a1a2e;
+  --bg-hover:      #2a2a4e;
+  --text-primary:  #e2e8f0;
+  --text-secondary:#94a3b8;
+  --accent:        #c084fc;
+  --accent-hover:  #a855f7;
+  --progress-fill: #c084fc;
+  --progress-bg:   #2d2d4e;
+  --border:        #2d2d4e;
+  --neutral-700:   #3d3d5e;
+  --code-bg:       #1a1a2e;
+}
+
 html, body {
   height: 100%;
   overflow: hidden;

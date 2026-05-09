@@ -7,6 +7,7 @@ import { existsSync } from 'fs'
 import { vaultRoutes } from './routes/vault'
 import { filesRoutes } from './routes/files'
 import { sseRoutes } from './routes/sse'
+import { groupsRoutes } from './routes/groups'
 
 const app = new Hono()
 
@@ -19,6 +20,7 @@ app.use('*', cors({
 app.route('/api/vault', vaultRoutes)
 app.route('/api/files', filesRoutes)
 app.route('/api/sse', sseRoutes)
+app.route('/api/groups', groupsRoutes)
 
 app.get('/api/health', (c) => c.json({ ok: true }))
 
