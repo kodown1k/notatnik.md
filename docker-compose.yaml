@@ -5,6 +5,11 @@ services:
       - "3010:3001"
     volumes:
       - /home/perun/Code:/vault
+      - notatnik-data:/data
     environment:
       - PORT=3001
       - VAULT_PATH=/vault
+      - GROUPS_DB_PATH=/data/groups.db
+
+volumes:
+  notatnik-data:
