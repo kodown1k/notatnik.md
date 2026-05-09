@@ -27,3 +27,26 @@ groupsRoutes.post('/', async (c) => {
   const result = groupsDb.query('INSERT INTO groups (name, color) VALUES (?, ?) RETURNING id').get(name, color) as { id: number }
   return c.json({ id: result.id, name, color, items: [] }, 201)
 })
+
+groupsRoutes.patch('/:id', async (c) => {
+  const id = Number(c.req.param('id'))
+  if (!Number.isFinite(id)) return c.json({ error: 'invalid id' }, 400)
+
+  const body = await c.req.json<{ name?: string; color?: string }>().catch(() => ({}))
+  const existing = groupsDb.query('SELECT id, name, color FROM groups WHERE id = ?').get(id) as { id: number; name: string; color: string } | null
+  if (!existing) return c.json({ error: 'not found' }, 404)
+
+  const newName = body.name?.trim() || existing.name
+  const newColor = body.color?.trim() || existing.color
+  groupsDb.run('UPDATE groups SET name = ?, color = ? WHERE id = ?', [newName, newColor, id])
+
+  return c.json({ id, name: newName, color: newColor })
+})
+
+groupsRoutes.delete('/:id', (c) => {
+  const id = Number(c.req.param('id'))
+  if (!Number.isFinite(id)) return c.json({ error: 'invalid id' }, 400)
+  const res = groupsDb.run('DELETE FROM groups WHERE id = ?', [id])
+  if (res.changes === 0) return c.json({ error: 'not found' }, 404)
+  return c.body(null, 204)
+})

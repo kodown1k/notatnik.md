@@ -55,3 +55,41 @@ describe('groups routes — POST', () => {
     expect(res.status).toBe(400)
   })
 })
+
+describe('groups routes — PATCH/DELETE', () => {
+  beforeEach(reset)
+
+  test('PATCH /api/groups/:id renames group', async () => {
+    const created = await (await client.api.groups.$post({ json: { name: 'Old', color: '#c084fc' } })).json()
+    const res = await client.api.groups[':id'].$patch({ param: { id: String(created.id) }, json: { name: 'New' } })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.name).toBe('New')
+    expect(body.color).toBe('#c084fc')
+  })
+
+  test('PATCH /api/groups/:id changes color', async () => {
+    const created = await (await client.api.groups.$post({ json: { name: 'X', color: '#c084fc' } })).json()
+    const res = await client.api.groups[':id'].$patch({ param: { id: String(created.id) }, json: { color: '#34d399' } })
+    expect(res.status).toBe(200)
+    expect((await res.json()).color).toBe('#34d399')
+  })
+
+  test('PATCH /api/groups/:id with non-existent id returns 404', async () => {
+    const res = await client.api.groups[':id'].$patch({ param: { id: '99999' }, json: { name: 'X' } })
+    expect(res.status).toBe(404)
+  })
+
+  test('DELETE /api/groups/:id removes group', async () => {
+    const created = await (await client.api.groups.$post({ json: { name: 'X', color: '#c084fc' } })).json()
+    const res = await client.api.groups[':id'].$delete({ param: { id: String(created.id) } })
+    expect(res.status).toBe(204)
+    const list = await (await client.api.groups.$get()).json()
+    expect(list).toEqual([])
+  })
+
+  test('DELETE /api/groups/:id with non-existent id returns 404', async () => {
+    const res = await client.api.groups[':id'].$delete({ param: { id: '99999' } })
+    expect(res.status).toBe(404)
+  })
+})
