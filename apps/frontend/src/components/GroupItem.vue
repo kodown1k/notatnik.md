@@ -26,7 +26,11 @@ const stale = computed(() => !vaultStore.pathSet.has(props.item.path))
 
 function onClick() {
   if (stale.value) return
-  if (!isDir.value) router.push(`/${props.item.path}`)
+  if (isDir.value) {
+    vaultStore.revealInTree(props.item.path)
+    return
+  }
+  router.push(`/${props.item.path}`)
 }
 </script>
 

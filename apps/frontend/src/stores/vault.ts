@@ -22,6 +22,30 @@ export const useVaultStore = defineStore('vault', () => {
     return s
   })
 
+  // Tree expand/collapse state — reactive, source of truth for TreeItem.
+  // Default behaviour: directory is open unless explicitly closed.
+  const TREE_OPEN_PREFIX = 'notatnik-tree-open:'
+  const treeOpenState = reactive(new Map<string, boolean>())
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (key?.startsWith(TREE_OPEN_PREFIX)) {
+      treeOpenState.set(key.slice(TREE_OPEN_PREFIX.length), localStorage.getItem(key) === 'open')
+    }
+  }
+  function isTreeOpen(path: string): boolean {
+    return treeOpenState.has(path) ? treeOpenState.get(path)! : true
+  }
+  function setTreeOpen(path: string, open: boolean) {
+    treeOpenState.set(path, open)
+    localStorage.setItem(`${TREE_OPEN_PREFIX}${path}`, open ? 'open' : 'closed')
+  }
+  function revealInTree(path: string) {
+    const parts = path.split('/').filter(Boolean)
+    for (let i = 1; i <= parts.length; i++) {
+      setTreeOpen(parts.slice(0, i).join('/'), true)
+    }
+  }
+
   const HISTORY_KEY = 'notatnik-vault-history'
   const MAX_HISTORY = 5
 
@@ -96,6 +120,9 @@ export const useVaultStore = defineStore('vault', () => {
     tree,
     changedFiles,
     pathSet,
+    isTreeOpen,
+    setTreeOpen,
+    revealInTree,
     getHistory,
     setVault,
     loadVault,

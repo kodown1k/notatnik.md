@@ -69,12 +69,14 @@
 import { ref, computed } from 'vue'
 import type { TreeNode } from '@notatnik/shared'
 import { useGroupsStore } from '../stores/groups'
+import { useVaultStore } from '../stores/vault'
 import ContextMenu from './ContextMenu.vue'
 import GroupDialog from './GroupDialog.vue'
 
 defineOptions({ name: 'TreeItem' })
 
 const groupsStore = useGroupsStore()
+const vaultStore = useVaultStore()
 
 const props = defineProps<{
   node: TreeNode
@@ -86,16 +88,10 @@ defineEmits<{
   open: [node: TreeNode]
 }>()
 
-const STORAGE_KEY = `notatnik-tree-open:${props.node.path}`
-const open = ref(
-  props.node.type === 'dir'
-    ? (localStorage.getItem(STORAGE_KEY) ?? 'open') !== 'closed'
-    : false
-)
+const open = computed(() => props.node.type === 'dir' && vaultStore.isTreeOpen(props.node.path))
 
 function toggle() {
-  open.value = !open.value
-  localStorage.setItem(STORAGE_KEY, open.value ? 'open' : 'closed')
+  vaultStore.setTreeOpen(props.node.path, !open.value)
 }
 
 function onDragStart(e: DragEvent) {
