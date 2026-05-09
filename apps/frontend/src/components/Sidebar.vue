@@ -1,19 +1,23 @@
 <!-- apps/frontend/src/components/Sidebar.vue -->
 <template>
   <nav class="sidebar">
-    <ul class="tree-root">
-      <li v-if="!vaultStore.tree.length" class="no-files">
-        Brak plików .md w vaultcie
-      </li>
-      <TreeItem
-        v-for="node in vaultStore.tree"
-        :key="node.path"
-        :node="node"
-        :current-path="currentPath"
-        :changed-files="vaultStore.changedFiles"
-        @open="openFile"
-      />
-    </ul>
+    <GroupsSection />
+    <div class="files-section">
+      <div class="section-label">Pliki</div>
+      <ul class="tree-root">
+        <li v-if="!vaultStore.tree.length" class="no-files">
+          Brak plików .md w vaultcie
+        </li>
+        <TreeItem
+          v-for="node in vaultStore.tree"
+          :key="node.path"
+          :node="node"
+          :current-path="currentPath"
+          :changed-files="vaultStore.changedFiles"
+          @open="openFile"
+        />
+      </ul>
+    </div>
   </nav>
 </template>
 
@@ -22,6 +26,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useVaultStore } from '../stores/vault'
 import TreeItem from './TreeItem.vue'
+import GroupsSection from './GroupsSection.vue'
 import type { TreeNode } from '@notatnik/shared'
 
 const vaultStore = useVaultStore()
@@ -62,4 +67,14 @@ function openFile(node: TreeNode) {
   color: var(--text-secondary);
   font-size: 0.85rem;
 }
+
+.section-label {
+  padding: 8px 16px 4px;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--border);
+}
+.files-section { display: flex; flex-direction: column; }
 </style>
