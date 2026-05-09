@@ -57,7 +57,6 @@
     :x="cmX"
     :y="cmY"
     :path="node.path"
-    :is-file="node.type === 'file'"
     @close="cmVisible = false"
     @open="$emit('open', node)"
     @show-dialog="openDialog"

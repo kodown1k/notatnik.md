@@ -63,9 +63,14 @@ async function commitCreate() {
     suppressBlurCommit = false
     return
   }
-  await groupsStore.createGroup(name, selectedColor.value)
-  creating.value = false
-  setTimeout(() => { suppressBlurCommit = false }, 0)
+  try {
+    await groupsStore.createGroup(name, selectedColor.value)
+    creating.value = false
+  } catch (e) {
+    console.error('createGroup failed:', e)
+  } finally {
+    setTimeout(() => { suppressBlurCommit = false }, 0)
+  }
 }
 
 function cancelCreate() {

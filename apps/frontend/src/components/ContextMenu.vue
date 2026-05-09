@@ -34,7 +34,6 @@ const props = defineProps<{
   x: number
   y: number
   path: string
-  isFile: boolean
 }>()
 
 const emit = defineEmits<{
